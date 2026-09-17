@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="tempBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFBEB"/>
+      <stop offset="100%" stop-color="#FEF3C7"/>
+    </linearGradient>
+    <linearGradient id="mercuryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F97316"/>
+      <stop offset="50%" stop-color="#EA580C"/>
+      <stop offset="100%" stop-color="#C2410C"/>
+    </linearGradient>
+    <filter id="tempShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#9A3412" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  
+  <!-- Warm Background Circle -->
+  <circle cx="32" cy="32" r="28" fill="url(#tempBg)"/>
+  
+  <!-- Outer Thermometer Glass Tube & Bulb -->
+  <g filter="url(#tempShadow)">
+    <path d="M36 12a4 4 0 0 0-8 0v22.2a10 10 0 1 0 8 0V12z" fill="#FFFFFF" stroke="#F59E0B" stroke-width="2.5"/>
+    
+    <!-- Mercury Column & Bulb -->
+    <path d="M34 20a2 2 0 0 0-4 0v16.2a7 7 0 1 0 4 0V20z" fill="url(#mercuryGrad)"/>
+    
+    <!-- Bulb Highlight -->
+    <circle cx="30" cy="42" r="2.5" fill="#FED7AA" opacity="0.8"/>
+  </g>
+  
+  <!-- Temperature Tick Marks -->
+  <path d="M38 18h3M38 23h4M38 28h3" stroke="#D97706" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Sun Ray Sparks -->
+  <path d="M16 20l-3-2M15 30l-3.5 0.5M46 14l3.5-1M48 24l3 1" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+</svg>

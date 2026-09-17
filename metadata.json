@@ -1,0 +1,6 @@
+{
+  "name": "KrishiGuide",
+  "description": "Mobile-first agricultural risk prediction, NASA satellite telemetry, AI leaf disease diagnostics, and Gemini agronomist for smallholder farmers.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
