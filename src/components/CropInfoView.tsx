@@ -87,19 +87,19 @@ export const CropInfoView: React.FC<CropInfoViewProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {activeCrop.cultivationTime.aus && (
               <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
-                <span className="text-xs font-bold text-[#1E5128] block">Aus (আউশ)</span>
+                <span className="text-xs font-bold text-[#1E5128] block">{isBn ? 'আউশ মৌসুম' : 'Aus Season'}</span>
                 <span className="text-xs font-medium text-gray-700">{activeCrop.cultivationTime.aus}</span>
               </div>
             )}
             {activeCrop.cultivationTime.aman && (
               <div className="bg-green-50/60 p-3 rounded-xl border border-green-100">
-                <span className="text-xs font-bold text-[#1E5128] block">Aman (রোপা আমন)</span>
+                <span className="text-xs font-bold text-[#1E5128] block">{isBn ? 'রোপা আমন মৌসুম' : 'Aman Season'}</span>
                 <span className="text-xs font-medium text-gray-700">{activeCrop.cultivationTime.aman}</span>
               </div>
             )}
             {activeCrop.cultivationTime.boro && (
               <div className="bg-teal-50/60 p-3 rounded-xl border border-teal-100">
-                <span className="text-xs font-bold text-[#1E5128] block">Boro (বোরো / রবি)</span>
+                <span className="text-xs font-bold text-[#1E5128] block">{isBn ? 'বোরো ও রবি মৌসুম' : 'Boro & Rabi Season'}</span>
                 <span className="text-xs font-medium text-gray-700">{activeCrop.cultivationTime.boro}</span>
               </div>
             )}

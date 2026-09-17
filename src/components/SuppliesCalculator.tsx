@@ -28,23 +28,23 @@ export const SuppliesCalculator: React.FC<SuppliesCalculatorProps> = ({
   const getSupplies = () => {
     if (selectedCrop === 'potato') {
       return [
-        { nameEn: 'Potato Seed Tubers (বীজ আলু)', nameBn: 'উন্নত বীজ আলু', amount: 600 * landArea, unit: 'Kg', estPrice: 24000 * landArea },
-        { nameEn: 'Urea (ইউরিয়া সার)', nameBn: 'ইউরিয়া সার', amount: 110 * landArea, unit: 'Kg', estPrice: 2970 * landArea },
-        { nameEn: 'TSP / DAP (টিএসপি/ডিএপি)', nameBn: 'টিএসপি সার', amount: 90 * landArea, unit: 'Kg', estPrice: 2430 * landArea },
-        { nameEn: 'MoP (পটাশ সার)', nameBn: 'মিউরেট অব পটাশ', amount: 100 * landArea, unit: 'Kg', estPrice: 2200 * landArea },
+        { nameEn: 'Certified Potato Seed Tubers', nameBn: 'উন্নত বীজ আলু', amount: 600 * landArea, unit: 'Kg', estPrice: 24000 * landArea },
+        { nameEn: 'Urea Fertilizer', nameBn: 'ইউরিয়া সার', amount: 110 * landArea, unit: 'Kg', estPrice: 2970 * landArea },
+        { nameEn: 'TSP / DAP Fertilizer', nameBn: 'টিএসপি সার', amount: 90 * landArea, unit: 'Kg', estPrice: 2430 * landArea },
+        { nameEn: 'MoP (Muriate of Potash)', nameBn: 'মিউরেট অব পটাশ', amount: 100 * landArea, unit: 'Kg', estPrice: 2200 * landArea },
         { nameEn: 'Mancozeb 80% WP (Fungicide)', nameBn: 'ম্যানকোজেব ৮০% ডব্লিউপি', amount: 2 * landArea, unit: 'Kg', estPrice: 1600 * landArea },
       ];
     }
 
     // Default rice (Aman/Boro)
     return [
-      { nameEn: 'Certified Rice Seed (ধান বীজ)', nameBn: 'ব্রি প্রত্যয়িত বীজ (ধান)', amount: 10 * landArea, unit: 'Kg', estPrice: 850 * landArea },
-      { nameEn: 'Urea Fertilizer (ইউরিয়া)', nameBn: 'ইউরিয়া সার (৩ কিস্তিতে)', amount: 85 * landArea, unit: 'Kg', estPrice: 2295 * landArea },
-      { nameEn: 'TSP Fertilizer (টিএসপি)', nameBn: 'টিএসপি সার (জমি তৈরির সময়)', amount: 45 * landArea, unit: 'Kg', estPrice: 1215 * landArea },
-      { nameEn: 'MoP / Potash (পটাশ)', nameBn: 'মিউরেট অব পটাশ (এমওপি)', amount: 35 * landArea, unit: 'Kg', estPrice: 770 * landArea },
-      { nameEn: 'Gypsum (জিপসাম সার)', nameBn: 'জিপসাম সার', amount: 25 * landArea, unit: 'Kg', estPrice: 350 * landArea },
-      { nameEn: 'Zinc Sulphate (দস্তা সার)', nameBn: 'জিংক সালফেট (দস্তা)', amount: 4 * landArea, unit: 'Kg', estPrice: 640 * landArea },
-      { nameEn: 'Tricyclazole 75% WP (ব্লাস্ট নিরাময়)', nameBn: 'ট্রাইসাইক্লাজোল ৭৫% (ছত্রাকনাশক)', amount: 0.3 * landArea, unit: 'Kg', estPrice: 750 * landArea },
+      { nameEn: 'Certified Rice Seeds (BRRI)', nameBn: 'ব্রি প্রত্যয়িত বীজ (ধান)', amount: 10 * landArea, unit: 'Kg', estPrice: 850 * landArea },
+      { nameEn: 'Urea Fertilizer (3 Split Doses)', nameBn: 'ইউরিয়া সার (৩ কিস্তিতে)', amount: 85 * landArea, unit: 'Kg', estPrice: 2295 * landArea },
+      { nameEn: 'TSP Fertilizer (Basal)', nameBn: 'টিএসপি সার (জমি তৈরির সময়)', amount: 45 * landArea, unit: 'Kg', estPrice: 1215 * landArea },
+      { nameEn: 'MoP / Potash Fertilizer', nameBn: 'মিউরেট অব পটাশ (এমওপি)', amount: 35 * landArea, unit: 'Kg', estPrice: 770 * landArea },
+      { nameEn: 'Agricultural Gypsum', nameBn: 'জিপসাম সার', amount: 25 * landArea, unit: 'Kg', estPrice: 350 * landArea },
+      { nameEn: 'Zinc Sulphate', nameBn: 'জিংক সালফেট (দস্তা)', amount: 4 * landArea, unit: 'Kg', estPrice: 640 * landArea },
+      { nameEn: 'Tricyclazole 75% WP (Blast Cure)', nameBn: 'ট্রাইসাইক্লাজোল ৭৫% (ছত্রাকনাশক)', amount: 0.3 * landArea, unit: 'Kg', estPrice: 750 * landArea },
     ];
   };
 

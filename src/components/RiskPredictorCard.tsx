@@ -41,7 +41,7 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<PredictionResult | null>({
     risk: 'Low Risk',
-    best_crop: userDistrict.toLowerCase().includes('rajshahi') ? 'Jute' : 'Rice (Transplanted Aman / রোপা আমন)',
+    best_crop: userDistrict.toLowerCase().includes('rajshahi') ? 'Jute' : 'Rice (Transplanted Aman)',
     precip_7d: 14.5,
     temp_7d_avg: 29.2,
   });
@@ -182,24 +182,24 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
       {/* Card Header with Logo */}
       <div className="bg-gradient-to-r from-[#1E5128] to-[#2E6F3E] p-3 sm:p-4 text-white">
         <div className="flex items-center space-x-2.5 sm:space-x-3">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white p-1 shadow-md flex items-center justify-center flex-shrink-0 border border-green-200">
+          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white shadow-md flex items-center justify-center flex-shrink-0 border border-green-200 overflow-hidden">
             <img 
               src="/images/nasa_logo.svg" 
               alt="NASA Logo" 
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover scale-[1.04]"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/logo.png';
               }}
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-sm sm:text-lg font-bold leading-snug truncate">
+            <h2 className="text-xs sm:text-base font-bold leading-tight">
               {isBn ? 'কৃষি ঝুঁকি ও ফসল উপযুক্ততা পূর্বাভাস' : 'Agriculture Risk & Crop Suitability'}
             </h2>
-            <p className="text-[11px] sm:text-xs text-green-100 truncate">
+            <p className="text-[10px] sm:text-xs text-green-100 mt-0.5 leading-tight truncate sm:whitespace-normal">
               {isBn 
-                ? 'নাসা স্যাটেলাইট ডেটা ও এগ্রো-এআই অ্যালগরিদম ভিত্তিক বিশ্লেষণ' 
-                : 'NASA POWER Climatology & Machine Learning Risk Engine'}
+                ? 'নাসা স্যাটেলাইট ডেটা ও এগ্রো-এআই বিশ্লেষণ' 
+                : 'NASA Climatology & Machine Learning Risk Engine'}
             </p>
           </div>
         </div>
@@ -346,7 +346,17 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
                 <span>{isBn ? 'প্রস্তাবিত সেরা ফসল' : 'Recommended Best Crop'}</span>
               </div>
               <h3 className="text-lg font-black text-gray-900 mt-0.5">
-                {prediction.best_crop}
+                {isBn
+                  ? (prediction.best_crop.toLowerCase().includes('rice') || prediction.best_crop.includes('আমন')
+                      ? 'রোপা আমন ধান'
+                      : prediction.best_crop.toLowerCase().includes('jute')
+                      ? 'পাট'
+                      : prediction.best_crop.toLowerCase().includes('wheat')
+                      ? 'গম'
+                      : prediction.best_crop.toLowerCase().includes('potato')
+                      ? 'আলু'
+                      : prediction.best_crop)
+                  : prediction.best_crop.replace(/\s*\(.*?[\u0980-\u09FF].*?\)/g, '').trim()}
               </h3>
               <p className="text-xs text-gray-600 mt-1">
                 {isBn

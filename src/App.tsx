@@ -26,7 +26,9 @@ import { YieldMaxWizard } from './components/YieldMaxWizard';
 import { FarmerProfileView } from './components/FarmerProfileView';
 import { SuppliesCalculator } from './components/SuppliesCalculator';
 import { NotificationsModal } from './components/NotificationsModal';
+import { SettingsModal } from './components/SettingsModal';
 import { LoginScreen } from './components/LoginScreen';
+import { WelcomeScreen } from './components/WelcomeScreen';
 import { DynamicIconPic } from './components/DynamicIconPic';
 
 interface FarmerUser {
@@ -38,10 +40,46 @@ interface FarmerUser {
 
 export function App() {
   // App Global State
-  const [language, setLanguage] = useState<Language>('bn');
+  const [language, setLanguage] = useState<Language>(() => {
+    try {
+      const saved = localStorage.getItem('krishi_language');
+      return saved === 'en' || saved === 'bn' ? saved : 'bn';
+    } catch {
+      return 'bn';
+    }
+  });
   const isBn = language === 'bn';
 
-  // Authentication State
+  const handleLanguageChange = (newLang: Language) => {
+    setLanguage(newLang);
+    try {
+      localStorage.setItem('krishi_language', newLang);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDistrictChange = (newDistrict: string) => {
+    if (currentUser) {
+      const updated = { ...currentUser, district: newDistrict };
+      setCurrentUser(updated);
+      try {
+        localStorage.setItem('krishi_farmer_user', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  // Authentication & Onboarding State
+  const [hasCompletedWelcome, setHasCompletedWelcome] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('krishi_welcome_completed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [currentUser, setCurrentUser] = useState<FarmerUser | null>(() => {
     try {
       const saved = localStorage.getItem('krishi_farmer_user');
@@ -62,6 +100,7 @@ export function App() {
   // Notifications State
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
   const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
@@ -98,12 +137,30 @@ export function App() {
     setCurrentUser(null);
   };
 
-  // IF NOT LOGGED IN -> RENDER AUTH / LOGIN SCREEN FIRST
+  // IF NOT LOGGED IN -> CHECK IF WELCOME / LANGUAGE STEP IS COMPLETED FIRST
   if (!currentUser) {
+    if (!hasCompletedWelcome) {
+      return (
+        <WelcomeScreen
+          language={language}
+          onSelectLanguage={handleLanguageChange}
+          onNext={() => {
+            try {
+              localStorage.setItem('krishi_welcome_completed', 'true');
+            } catch (e) {
+              console.error(e);
+            }
+            setHasCompletedWelcome(true);
+          }}
+        />
+      );
+    }
+
     return (
       <LoginScreen
         language={language}
-        onToggleLanguage={() => setLanguage((prev) => (prev === 'bn' ? 'en' : 'bn'))}
+        onToggleLanguage={() => handleLanguageChange(language === 'bn' ? 'en' : 'bn')}
+        onBackToLanguageSelect={() => setHasCompletedWelcome(false)}
         onLoginSuccess={handleLoginSuccess}
       />
     );
@@ -157,11 +214,11 @@ export function App() {
                     </p>
                   </div>
 
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20 flex-shrink-0">
+                  <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white shadow-md border-2 border-white/90 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     <img
                       src="/logo.png"
-                      alt="Logo Icon"
-                      className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+                      alt="KrishiGuide Logo"
+                      className="w-full h-full object-cover scale-[1.12]"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
@@ -190,11 +247,11 @@ export function App() {
               className="bg-white rounded-2xl p-3.5 sm:p-4 border border-blue-200/90 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-between group bg-gradient-to-r from-blue-50/70 via-white to-emerald-50/50 gap-2"
             >
               <div className="flex items-center space-x-3 sm:space-x-3.5 min-w-0">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white p-1 flex items-center justify-center flex-shrink-0 shadow-sm border border-blue-200 group-hover:scale-105 transition-transform overflow-hidden">
+                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm border border-blue-200 group-hover:scale-105 transition-transform overflow-hidden">
                   <img
                     src="/images/nasa_logo.svg"
                     alt="NASA Meatball Insignia Logo"
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-cover scale-[1.04]"
                   />
                 </div>
                 <div className="min-w-0">
@@ -404,6 +461,9 @@ export function App() {
         {currentTab === 'hub' && (
           <HubView
             language={language}
+            onChangeLanguage={handleLanguageChange}
+            currentDistrict={currentUser.district}
+            onChangeDistrict={handleDistrictChange}
             onSelectService={(serviceId) => {
               if (serviceId === 'disease') setCurrentTab('scan');
               else if (serviceId === 'weather') setCurrentTab('nasa');
@@ -492,6 +552,7 @@ export function App() {
             language={language}
             user={currentUser}
             onOpenChatWithTopic={openChatWithTopic}
+            onOpenSettings={() => setIsSettingsOpen(true)}
             onLogout={handleLogout}
           />
         )}
@@ -539,6 +600,16 @@ export function App() {
         notifications={notifications}
         onMarkAllAsRead={handleMarkAllNotificationsRead}
         onOpenChatWithTopic={openChatWithTopic}
+      />
+
+      {/* GLOBAL SETTINGS MODAL */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        language={language}
+        onChangeLanguage={handleLanguageChange}
+        currentDistrict={currentUser.district}
+        onChangeDistrict={handleDistrictChange}
       />
 
       {/* BOTTOM PERSISTENT NAVIGATION BAR */}

@@ -37,15 +37,15 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
   const isBn = language === 'bn';
   const [activeTab, setActiveTab] = useState<'risk' | 'land' | 'weather' | 'soil'>('risk');
 
-  // 7-day forecast mock data matching Screenshot 6
+  // 7-day forecast data with picture icons matching user request
   const forecastDays = [
-    { day: isBn ? 'রবি' : 'SUN', temp: '+25°C', icon: <Sun className="w-5 h-5 text-amber-400" /> },
-    { day: isBn ? 'সোম' : 'MON', temp: '+29°C', icon: <CloudSun className="w-5 h-5 text-amber-300" /> },
-    { day: isBn ? 'মঙ্গল' : 'TUE', temp: '+28°C', icon: <CloudRain className="w-5 h-5 text-blue-400" /> },
-    { day: isBn ? 'বুধ' : 'WED', temp: '+26°C', icon: <CloudRain className="w-5 h-5 text-blue-500" /> },
-    { day: isBn ? 'বৃহঃ' : 'THU', temp: '+27°C', icon: <CloudSun className="w-5 h-5 text-amber-300" /> },
-    { day: isBn ? 'শুক্র' : 'FRI', temp: '+29°C', icon: <Sun className="w-5 h-5 text-amber-400" /> },
-    { day: isBn ? 'শনি' : 'SAT', temp: '+30°C', icon: <Sun className="w-5 h-5 text-amber-400" /> },
+    { day: isBn ? 'রবি' : 'SUN', temp: '+25°C', iconSrc: '/images/weather/sunny.jpg', alt: 'Sunny' },
+    { day: isBn ? 'সোম' : 'MON', temp: '+29°C', iconSrc: '/images/weather/partly_cloudy.jpg', alt: 'Partly Cloudy' },
+    { day: isBn ? 'মঙ্গল' : 'TUE', temp: '+28°C', iconSrc: '/images/weather/rain.jpg', alt: 'Rain' },
+    { day: isBn ? 'বুধ' : 'WED', temp: '+26°C', iconSrc: '/images/weather/rain.jpg', alt: 'Rain' },
+    { day: isBn ? 'বৃহঃ' : 'THU', temp: '+27°C', iconSrc: '/images/weather/partly_cloudy.jpg', alt: 'Partly Cloudy' },
+    { day: isBn ? 'শুক্র' : 'FRI', temp: '+29°C', iconSrc: '/images/weather/sunny.jpg', alt: 'Sunny' },
+    { day: isBn ? 'শনি' : 'SAT', temp: '+30°C', iconSrc: '/images/weather/sunny.jpg', alt: 'Sunny' },
   ];
 
   return (
@@ -63,11 +63,11 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white p-0.5 shadow-md flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden border border-white/40">
               <img
                 src="/images/nasa_logo.svg"
                 alt="NASA Logo"
-                className="w-full h-full object-contain"
+                className="w-full h-full object-cover scale-[1.04]"
               />
             </div>
             <div className="min-w-0">
@@ -84,11 +84,11 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
           </div>
 
           {/* Segmented Filter Control: Risk & Suitability | Land Condition | Weather | Soil */}
-          <div className="bg-white/15 p-1 rounded-2xl grid grid-cols-4 gap-1 backdrop-blur-sm border border-white/20">
+          <div className="bg-white/15 p-1 rounded-2xl flex items-center justify-between gap-1 backdrop-blur-sm border border-white/20 overflow-x-auto scrollbar-none">
             <button
               type="button"
               onClick={() => setActiveTab('risk')}
-              className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center leading-tight truncate ${
+              className={`py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center whitespace-nowrap flex-1 sm:flex-initial cursor-pointer ${
                 activeTab === 'risk'
                   ? 'bg-white text-[#1E5128] shadow-md'
                   : 'text-white/80 hover:text-white'
@@ -99,7 +99,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('land')}
-              className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center leading-tight truncate ${
+              className={`py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center whitespace-nowrap flex-1 sm:flex-initial cursor-pointer ${
                 activeTab === 'land'
                   ? 'bg-white text-[#1E5128] shadow-md'
                   : 'text-white/80 hover:text-white'
@@ -110,7 +110,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('weather')}
-              className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center leading-tight truncate ${
+              className={`py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center whitespace-nowrap flex-1 sm:flex-initial cursor-pointer ${
                 activeTab === 'weather'
                   ? 'bg-white text-[#1E5128] shadow-md'
                   : 'text-white/80 hover:text-white'
@@ -121,7 +121,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('soil')}
-              className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center leading-tight truncate ${
+              className={`py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center whitespace-nowrap flex-1 sm:flex-initial cursor-pointer ${
                 activeTab === 'soil'
                   ? 'bg-white text-[#1E5128] shadow-md'
                   : 'text-white/80 hover:text-white'
@@ -204,7 +204,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   <span className="text-[11px] font-bold text-gray-500 uppercase block">NDVI</span>
                   <span className="text-base font-black text-gray-900">0.72</span>
                   <span className="text-[10px] font-bold text-emerald-600 block">
-                    {isBn ? 'চমৎকার (Good)' : 'Good Health'}
+                    {isBn ? 'চমৎকার' : 'Good Health'}
                   </span>
                 </div>
               </div>
@@ -220,7 +220,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </span>
                   <span className="text-base font-black text-gray-900">32%</span>
                   <span className="text-[10px] font-bold text-amber-600 block">
-                    {isBn ? 'মাঝারি (Medium)' : 'Medium'}
+                    {isBn ? 'মাঝারি' : 'Medium'}
                   </span>
                 </div>
               </div>
@@ -236,7 +236,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </span>
                   <span className="text-base font-black text-gray-900">29.4 °C</span>
                   <span className="text-[10px] font-bold text-emerald-600 block">
-                    {isBn ? 'স্বাভাবিক (Normal)' : 'Normal'}
+                    {isBn ? 'স্বাভাবিক' : 'Normal'}
                   </span>
                 </div>
               </div>
@@ -277,8 +277,12 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </p>
                 </div>
 
-                <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-sm border border-white/20">
-                  <CloudSun className="w-10 h-10 text-yellow-300 animate-pulse" />
+                <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 overflow-hidden shadow-md">
+                  <img
+                    src="/images/weather/partly_cloudy.jpg"
+                    alt="Partly Cloudy"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
@@ -305,10 +309,19 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                 </span>
                 <div className="grid grid-cols-7 gap-1 text-center">
                   {forecastDays.map((item, i) => (
-                    <div key={i} className="bg-white/10 rounded-lg p-1.5 flex flex-col items-center">
+                    <div key={i} className="bg-white/10 hover:bg-white/20 rounded-xl p-1.5 flex flex-col items-center transition-colors">
                       <span className="text-[9px] font-bold text-green-100">{item.day}</span>
-                      <div className="my-1">{item.icon}</div>
-                      <span className="text-[9px] font-bold">{item.temp}</span>
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden my-1 bg-white/20 shadow-sm border border-white/30 flex items-center justify-center flex-shrink-0">
+                        <img
+                          src={item.iconSrc}
+                          alt={item.alt}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/images/weather/sunny.jpg';
+                          }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-bold text-white leading-none">{item.temp}</span>
                     </div>
                   ))}
                 </div>
@@ -323,12 +336,16 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
 
               <div className="space-y-3">
                 <div className="flex items-center space-x-3 pb-2 border-b border-green-200/60">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
-                    <CloudRain className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 shadow-2xs border border-blue-200">
+                    <img
+                      src="/images/weather/rain.jpg"
+                      alt="Rain"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <div className="flex-1">
                     <span className="text-xs sm:text-sm font-bold block text-gray-900">
-                      {isBn ? 'মাঝারি বৃষ্টির সম্ভাবনা (Moderate Chance of Rain)' : 'Moderate Chance of Rain'}
+                      {isBn ? 'মাঝারি বৃষ্টির সম্ভাবনা' : 'Moderate Chance of Rain'}
                     </span>
                     <span className="text-[11px] text-gray-600">
                       {isBn ? 'জমির নিচু অংশে অতিরিক্ত পানি জমতে দেবেন না।' : 'Avoid fertilizer application right before sudden showers.'}
@@ -342,7 +359,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </div>
                   <div className="flex-1">
                     <span className="text-xs sm:text-sm font-bold block text-gray-900">
-                      {isBn ? 'মাটিতে পর্যাপ্ত আর্দ্রতা (Sufficient Soil Moisture)' : 'Sufficient Soil Moisture'}
+                      {isBn ? 'মাটিতে পর্যাপ্ত আর্দ্রতা' : 'Sufficient Soil Moisture'}
                     </span>
                     <span className="text-[11px] text-gray-600">
                       {isBn ? 'আপাতত অতিরিক্ত সেচ পরিহার করুন।' : 'Irrigation can be paused for next 48 hours.'}
@@ -387,7 +404,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   {isBn ? 'দোআঁশ ও এঁটেল দোআঁশ মাটি' : 'Sandy Clay Loam Texture'}
                 </p>
                 <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-800">
-                  pH 6.4 (Optimal / আদর্শ)
+                  {isBn ? 'pH ৬.৪ (আদর্শ)' : 'pH 6.4 (Optimal)'}
                 </span>
               </div>
             </div>

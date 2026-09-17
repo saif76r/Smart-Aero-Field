@@ -29,15 +29,15 @@ export const YieldMaxWizard: React.FC<YieldMaxWizardProps> = ({
 
   // Wizard state: 1, 2, 3, 4 (calculating), 5 (result)
   const [step, setStep] = useState<number>(1);
-  const [crop, setCrop] = useState<string>('Rice (ধান)');
-  const [variety, setVariety] = useState<string>('BRRI dhan49 (ব্রি ধান৪৯)');
-  const [season, setSeason] = useState<string>('Aman (রোপা আমন)');
+  const [crop, setCrop] = useState<string>('rice');
+  const [variety, setVariety] = useState<string>('BRRI dhan49');
+  const [season, setSeason] = useState<string>('aman');
   const [landArea, setLandArea] = useState<string>('2');
-  const [landUnit, setLandUnit] = useState<string>('Acre');
-  const [soilType, setSoilType] = useState<string>('Loam (দোআঁশ)');
+  const [landUnit, setLandUnit] = useState<string>('acre');
+  const [soilType, setSoilType] = useState<string>('loam');
   const [sowingTime, setSowingTime] = useState<string>('July 20');
   const [seedQuantity, setSeedQuantity] = useState<string>('5');
-  const [irrigationMode, setIrrigationMode] = useState<string>('Regular (নিয়মিত)');
+  const [irrigationMode, setIrrigationMode] = useState<string>('regular');
 
   const handleRunAnalysis = () => {
     setStep(4);
@@ -108,40 +108,40 @@ export const YieldMaxWizard: React.FC<YieldMaxWizardProps> = ({
             <select
               value={crop}
               onChange={(e) => setCrop(e.target.value)}
-              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold"
+              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold text-gray-900"
             >
-              <option value="Rice (ধান)">Rice (ধান)</option>
-              <option value="Wheat (গম)">Wheat (গম)</option>
-              <option value="Maize (ভুট্টা)">Maize (ভুট্টা)</option>
-              <option value="Potato (আলু)">Potato (আলু)</option>
+              <option value="rice">{isBn ? 'ধান' : 'Rice (Paddy)'}</option>
+              <option value="wheat">{isBn ? 'গম' : 'Wheat'}</option>
+              <option value="maize">{isBn ? 'ভুট্টা' : 'Maize / Corn'}</option>
+              <option value="potato">{isBn ? 'আলু' : 'Potato'}</option>
             </select>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
-              {isBn ? 'উন্নত জাত (Variety)' : 'Variety'}
+              {isBn ? 'উন্নত জাত' : 'Variety'}
             </label>
             <input
               type="text"
               value={variety}
               onChange={(e) => setVariety(e.target.value)}
-              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold"
+              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold text-gray-900"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
-              {isBn ? 'মৌসুম (Season)' : 'Season'}
+              {isBn ? 'মৌসুম' : 'Season'}
             </label>
             <select
               value={season}
               onChange={(e) => setSeason(e.target.value)}
-              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold"
+              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold text-gray-900"
             >
-              <option value="Aman (রোপা আমন)">Aman (রোপা আমন)</option>
-              <option value="Boro (বোরো ধান)">Boro (বোরো ধান)</option>
-              <option value="Aus (আউশ)">Aus (আউশ)</option>
-              <option value="Rabi (রবি মৌসুম)">Rabi (রবি মৌসুম)</option>
+              <option value="aman">{isBn ? 'রোপা আমন মৌসুম' : 'Aman Season'}</option>
+              <option value="boro">{isBn ? 'বোরো মৌসুম' : 'Boro Season'}</option>
+              <option value="aus">{isBn ? 'আউশ মৌসুম' : 'Aus Season'}</option>
+              <option value="rabi">{isBn ? 'রবি মৌসুম' : 'Rabi / Winter'}</option>
             </select>
           </div>
 
@@ -177,7 +177,7 @@ export const YieldMaxWizard: React.FC<YieldMaxWizardProps> = ({
                 type="number"
                 value={landArea}
                 onChange={(e) => setLandArea(e.target.value)}
-                className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold"
+                className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold text-gray-900"
               />
             </div>
             <div>
@@ -187,28 +187,28 @@ export const YieldMaxWizard: React.FC<YieldMaxWizardProps> = ({
               <select
                 value={landUnit}
                 onChange={(e) => setLandUnit(e.target.value)}
-                className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold"
+                className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold text-gray-900"
               >
-                <option value="Acre">Acre (একর)</option>
-                <option value="Bigha">Bigha (বিঘা - ৩৩ শতক)</option>
-                <option value="Decimal">Decimal (শতক)</option>
+                <option value="acre">{isBn ? 'একর' : 'Acre'}</option>
+                <option value="bigha">{isBn ? 'বিঘা (৩৩ শতক)' : 'Bigha (33 Decimals)'}</option>
+                <option value="decimal">{isBn ? 'শতক' : 'Decimal'}</option>
               </select>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
-              {isBn ? 'মাটির ধরন (Soil Type)' : 'Soil Type'}
+              {isBn ? 'মাটির ধরন' : 'Soil Type'}
             </label>
             <select
               value={soilType}
               onChange={(e) => setSoilType(e.target.value)}
-              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold"
+              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold text-gray-900"
             >
-              <option value="Loam (দোআঁশ)">Loam (দোআঁশ মাটি)</option>
-              <option value="Clay Loam (এঁটেল দোআঁশ)">Clay Loam (এঁটেল দোআঁশ)</option>
-              <option value="Sandy Loam (বেলে দোআঁশ)">Sandy Loam (বেলে দোআঁশ)</option>
-              <option value="Clay (এঁটেল)">Clay (ভারী এঁটেল মাটি)</option>
+              <option value="loam">{isBn ? 'দোআঁশ মাটি' : 'Loamy Soil'}</option>
+              <option value="clay_loam">{isBn ? 'এঁটেল দোআঁশ' : 'Clay Loam'}</option>
+              <option value="sandy_loam">{isBn ? 'বেলে দোআঁশ' : 'Sandy Loam'}</option>
+              <option value="clay">{isBn ? 'ভারী এঁটেল মাটি' : 'Heavy Clay Soil'}</option>
             </select>
           </div>
 
@@ -275,11 +275,11 @@ export const YieldMaxWizard: React.FC<YieldMaxWizardProps> = ({
             <select
               value={irrigationMode}
               onChange={(e) => setIrrigationMode(e.target.value)}
-              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold"
+              className="w-full bg-[#F5F7F8] border border-gray-200 rounded-xl p-3 text-xs sm:text-sm font-semibold text-gray-900"
             >
-              <option value="Regular (নিয়মিত)">Regular (সুনিশ্চিত সেচ)</option>
-              <option value="Rainfed (বৃষ্টির পানি নির্ভর)">Rainfed (বৃষ্টির পানি নির্ভর)</option>
-              <option value="Drip / Sprinkler">Drip / Efficient</option>
+              <option value="regular">{isBn ? 'সুনিশ্চিত নিয়মিত সেচ' : 'Regular Controlled Irrigation'}</option>
+              <option value="rainfed">{isBn ? 'বৃষ্টির পানি নির্ভর' : 'Rainfed / Dependent'}</option>
+              <option value="drip">{isBn ? 'ড্রিপ / আধুনিক স্প্রিঙ্কলার' : 'Drip / Sprinkler'}</option>
             </select>
           </div>
 
@@ -333,11 +333,11 @@ export const YieldMaxWizard: React.FC<YieldMaxWizardProps> = ({
             </div>
 
             <h3 className="text-lg font-black text-gray-900">
-              {isBn ? 'ফলন স্কোর: অত্যন্ত আশাব্যঞ্জক (Very Good)' : 'Yield Potential Score: Very High'}
+              {isBn ? 'ফলন স্কোর: অত্যন্ত আশাব্যঞ্জক' : 'Yield Potential Score: Very High'}
             </h3>
             <p className="text-xs text-gray-600 max-w-sm mx-auto mt-1">
               {isBn
-                ? `${landArea} ${landUnit} জমিতে আধুনিক পদ্ধতি মানলে ফলন প্রায় ২০-২৫% বৃদ্ধি পাবে।`
+                ? `${landArea} ${landUnit === 'acre' ? 'একর' : landUnit === 'bigha' ? 'বিঘা' : 'শতক'} জমিতে আধুনিক পদ্ধতি মানলে ফলন প্রায় ২০-২৫% বৃদ্ধি পাবে।`
                 : `Following this precision protocol on your ${landArea} ${landUnit} plot will boost yield by 22%.`}
             </p>
           </div>

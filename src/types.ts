@@ -26,6 +26,7 @@ export interface AiEngineInfo {
 }
 
 export interface DiseaseDiagnostic {
+  isCropSpecimen?: boolean;
   diseaseName: string;
   diseaseNameBn: string;
   severity: 'High' | 'Moderate' | 'Low' | 'None';

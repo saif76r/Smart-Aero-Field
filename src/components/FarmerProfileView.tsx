@@ -19,6 +19,7 @@ interface FarmerProfileViewProps {
   language: Language;
   user?: { name: string; phone: string; district: string; landSize: string } | null;
   onOpenChatWithTopic?: (topic: string) => void;
+  onOpenSettings?: () => void;
   onLogout?: () => void;
 }
 
@@ -26,6 +27,7 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
   language,
   user,
   onOpenChatWithTopic,
+  onOpenSettings,
   onLogout,
 }) => {
   const isBn = language === 'bn';
@@ -76,15 +78,15 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
         <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-white/20 text-center text-xs">
           <div>
             <span className="text-[10px] text-green-200 block">{isBn ? 'জমির প্লট' : 'Plots'}</span>
-            <span className="font-bold text-sm">3 Plots</span>
+            <span className="font-bold text-sm">{isBn ? '৩টি প্লট' : '3 Plots'}</span>
           </div>
           <div>
             <span className="text-[10px] text-green-200 block">{isBn ? 'কৃষি স্কোর' : 'Agri Score'}</span>
-            <span className="font-bold text-sm text-[#D8E9A8]">92 / 100</span>
+            <span className="font-bold text-sm text-[#D8E9A8]">{isBn ? '৯২ / ১০০' : '92 / 100'}</span>
           </div>
           <div>
             <span className="text-[10px] text-green-200 block">{isBn ? 'সফল মৌসুম' : 'Seasons'}</span>
-            <span className="font-bold text-sm">12 Years</span>
+            <span className="font-bold text-sm">{isBn ? '১২ বছর' : '12 Years'}</span>
           </div>
         </div>
       </div>
@@ -148,8 +150,12 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
         <div className="space-y-2 text-xs">
           <div className="p-3 bg-[#F5F7F8] rounded-xl border border-gray-200 flex justify-between items-center">
             <div>
-              <span className="font-bold text-gray-900 block">Plot A: উত্তর মাঠ (North Field)</span>
-              <span className="text-gray-500">২.০ একর — ধান (ব্রি ধান৪৯) | রোপণ: ১৫ জুলাই</span>
+              <span className="font-bold text-gray-900 block">
+                {isBn ? 'প্লট ক: উত্তর মাঠ' : 'Plot A: North Field'}
+              </span>
+              <span className="text-gray-500">
+                {isBn ? '২.০ একর — ধান (ব্রি ধান৪৯) | রোপণ: ১৫ জুলাই' : '2.0 Acres — Rice (BRRI dhan49) | Transplanted: July 15'}
+              </span>
             </div>
             <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
               {isBn ? 'কুশি পর্যায়' : 'Tillering'}
@@ -158,8 +164,12 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
 
           <div className="p-3 bg-[#F5F7F8] rounded-xl border border-gray-200 flex justify-between items-center">
             <div>
-              <span className="font-bold text-gray-900 block">Plot B: পশ্চিম পুকুরপাড় (West Field)</span>
-              <span className="text-gray-500">১.৫ একর — দেশি গোল আলু ও সরিষা | রবি প্রস্তুতি</span>
+              <span className="font-bold text-gray-900 block">
+                {isBn ? 'প্লট খ: পশ্চিম পুকুরপাড়' : 'Plot B: West Field'}
+              </span>
+              <span className="text-gray-500">
+                {isBn ? '১.৫ একর — দেশি গোল আলু ও সরিষা | রবি প্রস্তুতি' : '1.5 Acres — Potato & Mustard | Rabi Prep'}
+              </span>
             </div>
             <span className="font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded">
               {isBn ? 'জমি তৈরি' : 'Land Prep'}
@@ -176,6 +186,17 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
         <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
         <span>{isBn ? 'আমার খামারের জন্য এআই পরামর্শ নিন' : 'Request Personalized Agronomy Plan'}</span>
       </button>
+
+      {onOpenSettings && (
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+        >
+          <Settings className="w-4 h-4 text-[#1E5128]" />
+          <span>{isBn ? 'অ্যাপ সেটিংস ও ভাষা (Settings & Language)' : 'Settings & Language'}</span>
+        </button>
+      )}
 
       {onLogout && (
         <button

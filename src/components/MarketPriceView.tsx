@@ -50,7 +50,7 @@ export const MarketPriceView: React.FC<MarketPriceViewProps> = ({
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h2 className="text-lg font-black">{isBn ? 'দৈনিক বাজার দর (Market Price)' : 'Commodity Market Rates'}</h2>
+          <h2 className="text-lg font-black">{isBn ? 'দৈনিক বাজার দর' : 'Commodity Market Rates'}</h2>
           <p className="text-xs text-green-200">
             {isBn ? 'পাইকারি আড়ত ও খুচরা বাজারের নির্ভরযোগ্য দর' : 'Real-time wholesale market prices in Bangladeshi Taka (Tk)'}
           </p>

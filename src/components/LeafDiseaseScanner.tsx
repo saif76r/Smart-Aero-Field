@@ -44,24 +44,90 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
   
   // Initially null - no default diagnostic results
   const [diagnostic, setDiagnostic] = useState<DiseaseDiagnostic | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Handle local file upload
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (reader.result) {
-        const imageBase64 = reader.result as string;
-        setSelectedImage(imageBase64);
-        runDiagnostics(imageBase64, selectedCrop, selectedPlantPart, selectedEngine);
-      }
-    };
-    reader.readAsDataURL(file);
+  // Helper to compress and resize large camera photos for fast, reliable upload
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1200;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.88));
+          } else {
+            resolve(e.target?.result as string);
+          }
+        };
+        img.onerror = () => resolve(e.target?.result as string);
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
-  // Run dual AI diagnosis (Hugging Face + Gemini 3.8 Flash) for leaves and fruits across all crops
+  // Handle local file upload
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErrorMessage(null);
+
+    try {
+      const imageBase64 = await compressImage(file);
+      setSelectedImage(imageBase64);
+      runDiagnostics(imageBase64, selectedCrop, selectedPlantPart, selectedEngine);
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result) {
+          const imageBase64 = reader.result as string;
+          setSelectedImage(imageBase64);
+          runDiagnostics(imageBase64, selectedCrop, selectedPlantPart, selectedEngine);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = '';
+  };
+
+  // Load sample image to verify disease diagnosis
+  const loadSampleImage = async (url: string, cropName: string, part: string) => {
+    setErrorMessage(null);
+    setSelectedCrop(cropName);
+    setSelectedPlantPart(part);
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setSelectedImage(base64);
+        runDiagnostics(base64, cropName, part, selectedEngine);
+      };
+      reader.readAsDataURL(blob);
+    } catch (e) {
+      console.error('Failed to load sample image:', e);
+    }
+  };
+
+  // Run dual AI diagnosis (Hugging Face + Gemini Vision) for leaves and fruits across all crops
   const runDiagnostics = async (
     imageBase64Url: string, 
     cropToUse: string = selectedCrop, 
@@ -69,6 +135,7 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
     engineToUse: AIEngineMode = selectedEngine
   ) => {
     setIsScanning(true);
+    setErrorMessage(null);
     setScanProgress(20);
     setScanStage(isBn ? 'চিত্র বিশ্লেষণ ও রোগ অনুসন্ধান চলছে...' : 'Analyzing crop imagery...');
 
@@ -104,12 +171,18 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
         setIsScanning(false);
         if (data.success && data.data) {
           setDiagnostic(data.data);
+          if (data.data.cropDetected && selectedCrop === 'All') {
+            // Keep the context informative
+          }
+        } else {
+          setErrorMessage(isBn ? 'ছবিটি বিশ্লেষণ করা যায়নি, অনুগ্রহ করে পুনরায় চেষ্টা করুন।' : 'Could not analyze image, please try again.');
         }
       }, 400);
     } catch (err) {
       clearTimeout(timer1);
       clearTimeout(timer2);
       setIsScanning(false);
+      setErrorMessage(isBn ? 'সার্ভার সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।' : 'Connection error. Please try again.');
     }
   };
 
@@ -245,24 +318,65 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
                 {isBn ? 'অথবা ক্যামেরা দিয়ে পাতা বা ফলের সরাসরি ছবি তুলুন' : 'or take live camera photo of leaf or fruit'}
               </span>
               <span className="text-[10px] text-gray-600 mt-2 bg-white px-2 py-0.5 rounded-full border border-gray-200">
-                সব ধরণের ফসল ও ফল উপযোগী • JPG, PNG — Max 10MB
+                {isBn ? 'সব ধরণের ফসল ও ফল উপযোগী • JPG, PNG — সর্বোচ্চ ১০ মেগাবাইট' : 'Supports all crops & fruits • JPG, PNG — Max 10MB'}
               </span>
             </div>
 
-            {/* Clear photo guideline box instead of demo buttons */}
-            <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-200/80 text-xs text-gray-700 flex items-start space-x-2.5">
-              <Leaf className="w-4 h-4 text-[#1E5128] mt-0.5 flex-shrink-0" />
-              <div className="space-y-0.5">
-                <p className="font-semibold text-gray-900">
-                  {isBn ? 'নির্ভুল পরীক্ষার জন্য নির্দেশিকা:' : 'Guidelines for accurate detection:'}
-                </p>
-                <p className="text-gray-600 text-[11px] leading-relaxed">
-                  {isBn 
-                    ? 'আক্রান্ত পাতা বা ফলের স্পষ্ট, আলোযুক্ত ও ফোকাসড ছবি তুলুন যাতে লক্ষণসমূহ স্পষ্টভাবে শনাক্ত করা যায়।' 
-                    : 'Take a clear, focused, well-lit photo of the affected leaf or fruit showing disease spots.'}
-                </p>
+            {/* Clear photo guideline box and quick test samples */}
+            <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200/80 text-xs text-gray-700 space-y-2.5">
+              <div className="flex items-start space-x-2.5">
+                <Leaf className="w-4 h-4 text-[#1E5128] mt-0.5 flex-shrink-0" />
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-gray-900">
+                    {isBn ? 'নির্ভুল পরীক্ষার জন্য নির্দেশিকা:' : 'Guidelines for accurate detection:'}
+                  </p>
+                  <p className="text-gray-600 text-[11px] leading-relaxed">
+                    {isBn 
+                      ? 'আক্রান্ত পাতা বা ফলের স্পষ্ট, আলোযুক্ত ও ফোকাসড ছবি তুলুন যাতে লক্ষণসমূহ স্পষ্টভাবে শনাক্ত করা যায়।' 
+                      : 'Take a clear, focused, well-lit photo of the affected leaf or fruit showing disease spots.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Instant sample verification buttons */}
+              <div className="pt-2 border-t border-emerald-200/60">
+                <span className="text-[11px] font-bold text-gray-700 block mb-1.5">
+                  {isBn ? 'বা তাৎক্ষণিক নমুনা ছবি দিয়ে যাচাই করুন:' : 'Or test with sample photos:'}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => loadSampleImage('/images/leaf_sample.jpg', 'Rice', 'leaf')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-emerald-100 text-emerald-900 text-xs font-semibold rounded-lg border border-emerald-300 shadow-2xs transition-colors"
+                  >
+                    <span>🌾</span>
+                    <span>{isBn ? 'ধানের পাতা ব্লাস্ট নমুনা' : 'Rice Blast Leaf'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => loadSampleImage('/images/sample_disease.jpg', 'Tomato', 'fruit')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-semibold rounded-lg border border-amber-300 shadow-2xs transition-colors"
+                  >
+                    <span>🍎</span>
+                    <span>{isBn ? 'টমেটো ফল পচা নমুনা' : 'Tomato Fruit Rot'}</span>
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Error Message if any */}
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between">
+                <span>{errorMessage}</span>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="font-bold underline ml-2"
+                >
+                  {isBn ? 'পুনরায় চেষ্টা' : 'Retry'}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right: Leaf Photo with Laser Scanner Overlay or Clean Awaiting State */}
@@ -339,21 +453,48 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
         {/* Diagnosis Results Display */}
         {diagnostic && (
           <div className="mt-6 space-y-4 border-t border-gray-100 pt-5">
+            {/* Warning if image is not a recognized plant specimen */}
+            {diagnostic.isCropSpecimen === false && (
+              <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 text-amber-900 flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="font-bold text-sm">
+                    {isBn ? 'সতর্কতা: ছবিতে কোনো ফসলের পাতা বা ফল শনাক্ত হয়নি' : 'Notice: Unclear Agricultural Crop Specimen'}
+                  </h4>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    {isBn
+                      ? 'আপলোডকৃত ছবিতে কোনো সুস্পষ্ট ফসলের পাতা, ফল বা কাণ্ড দেখা যাচ্ছে না। শতভাগ সঠিক ও নির্ভুল রোগ নির্ণয়ের জন্য আক্রান্ত পাতা বা ফলের একটি পরিষ্কার ও আলোকিত ছবি আপলোড করুন।'
+                      : 'The uploaded image does not clearly depict a recognized crop leaf, fruit, or plant. For accurate diagnosis, please upload a clear, focused photo of the affected crop.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* 1. Possible Disease Title Badge */}
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="inline-flex items-center space-x-2 bg-red-50 text-red-700 px-3.5 py-1.5 rounded-full border border-red-200 font-bold text-sm">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
+              <div className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full border font-bold text-sm ${
+                diagnostic.severity === 'None'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-red-50 text-red-700 border-red-200'
+              }`}>
+                {diagnostic.severity === 'None' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-red-600" />
+                )}
                 <span>
-                  {isBn ? 'শনাক্তকৃত রোগ: ' : 'Diagnosed Issue: '}
+                  {isBn 
+                    ? (diagnostic.severity === 'None' ? 'ফসল নিরীক্ষা: ' : 'শনাক্তকৃত রোগ: ') 
+                    : (diagnostic.severity === 'None' ? 'Health Status: ' : 'Diagnosed Issue: ')}
                   {isBn ? diagnostic.diseaseNameBn : diagnostic.diseaseName}
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 {/* Crop Badge */}
-                {diagnostic.cropDetected && (
+                {(diagnostic.cropDetected || diagnostic.cropDetectedBn) && (
                   <div className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
-                    🌾 {diagnostic.cropDetectedBn || diagnostic.cropDetected}
+                    🌾 {isBn ? (diagnostic.cropDetectedBn || diagnostic.cropDetected) : (diagnostic.cropDetected || diagnostic.cropDetectedBn)}
                   </div>
                 )}
 
@@ -371,7 +512,10 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
 
                 {/* Severity Badge */}
                 <div className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                  {isBn ? 'তীব্রতা: ' : 'Severity: '} {diagnostic.severity}
+                  {isBn ? 'তীব্রতা: ' : 'Severity: '} 
+                  {isBn 
+                    ? (diagnostic.severity === 'High' ? 'উচ্চ' : diagnostic.severity === 'Moderate' ? 'মাঝারি' : diagnostic.severity === 'Moderate to High' ? 'মাঝারি থেকে উচ্চ' : diagnostic.severity === 'Low' ? 'কম' : diagnostic.severity === 'None' ? 'নেই' : diagnostic.severity)
+                    : (diagnostic.severity === 'উচ্চ' ? 'High' : diagnostic.severity === 'মাঝারি' ? 'Moderate' : diagnostic.severity === 'কম' ? 'Low' : diagnostic.severity === 'নেই' ? 'None' : diagnostic.severity)}
                 </div>
               </div>
             </div>
@@ -379,10 +523,10 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
             {/* 2. Disease Description (Purple Box matching screenshot 9) */}
             <div className="bg-[#EAE4F8] border border-[#D5C7F5] rounded-xl p-4 text-gray-900">
               <h4 className="text-xs font-bold text-purple-900 uppercase tracking-wider mb-1">
-                {isBn ? 'রোগের বিবরণ (Disease Description):' : 'Disease Description:'}
+                {isBn ? 'রোগের বিবরণ:' : 'Disease Description:'}
               </h4>
               <p className="text-sm font-medium leading-relaxed">
-                {isBn && diagnostic.descriptionBn ? diagnostic.descriptionBn : diagnostic.description}
+                {isBn ? (diagnostic.descriptionBn || diagnostic.description) : (diagnostic.description || diagnostic.descriptionBn)}
               </p>
             </div>
 
@@ -390,10 +534,10 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
             <div className="bg-[#FFF4D0] border border-[#FDE08B] rounded-xl p-4 text-gray-900">
               <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider mb-2 flex items-center space-x-1">
                 <Layers className="w-3.5 h-3.5 text-amber-800" />
-                <span>{isBn ? 'প্রধান লক্ষণসমূহ (Symptoms):' : 'Key Symptoms:'}</span>
+                <span>{isBn ? 'প্রধান লক্ষণসমূহ:' : 'Key Symptoms:'}</span>
               </h4>
               <ul className="space-y-1.5 text-xs sm:text-sm font-medium text-gray-800">
-                {(isBn && diagnostic.symptomsBn ? diagnostic.symptomsBn : diagnostic.symptoms).map((sym, idx) => (
+                {((isBn ? (diagnostic.symptomsBn || diagnostic.symptoms) : (diagnostic.symptoms || diagnostic.symptomsBn)) || []).map((sym, idx) => (
                   <li key={idx} className="flex items-start space-x-2">
                     <span className="text-amber-700 font-bold leading-tight">•</span>
                     <span>{sym}</span>
@@ -407,7 +551,7 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center space-x-1">
                   <ShieldCheck className="w-4 h-4 text-[#1E5128]" />
-                  <span>{isBn ? 'সমাধান ও প্রতিকার (Solutions)' : 'Prescription & Solutions'}</span>
+                  <span>{isBn ? 'সমাধান ও প্রতিকার' : 'Prescription & Solutions'}</span>
                 </div>
                 <button
                   type="button"

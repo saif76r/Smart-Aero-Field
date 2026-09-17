@@ -27,7 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <img
               src="/logo.png"
               alt="KrishiGuide Logo"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover scale-[1.12]"
               onError={(e) => {
                 // Fallback to text icon if image fails
                 (e.target as HTMLElement).style.display = 'none';

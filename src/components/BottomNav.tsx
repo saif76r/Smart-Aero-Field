@@ -44,7 +44,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         >
           <Grid className={`w-5 h-5 ${currentTab === 'hub' ? 'stroke-[2.5]' : 'stroke-2'}`} />
           <span className="text-[10px] font-bold mt-0.5 leading-none whitespace-nowrap">
-            {isBn ? 'সার্ভিস' : 'Hub'}
+            {isBn ? 'সার্ভিস' : 'Services'}
           </span>
         </button>
 
