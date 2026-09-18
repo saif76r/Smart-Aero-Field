@@ -214,11 +214,11 @@ export function App() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2.5">
                       {/* Brand Logo Avatar */}
-                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white shadow-md border-2 border-white/90 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white shadow-md border-2 border-white/95 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         <img
                           src="/logo.png"
                           alt="Smart Aero Field Logo"
-                          className="w-full h-full object-cover scale-[1.12]"
+                          className="w-full h-full object-cover rounded-full"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';
                           }}

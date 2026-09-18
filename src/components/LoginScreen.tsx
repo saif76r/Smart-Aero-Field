@@ -115,12 +115,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             </button>
           )}
 
-          {/* Large, Prominent Smart Aero Field Logo (Requested by User) */}
-          <div className="w-20 h-20 sm:w-22 sm:h-22 mx-auto rounded-3xl bg-white shadow-xl p-2.5 flex items-center justify-center mb-3 border-2 border-white/95 transition-transform hover:scale-105">
+          {/* Large, Prominent Circular Smart Aero Field Logo */}
+          <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-white shadow-2xl p-1 flex items-center justify-center mb-3 border-3 border-white/95 overflow-hidden transition-transform hover:scale-105">
             <img 
               src="/logo.png" 
               alt="Smart Aero Field" 
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover rounded-full"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}

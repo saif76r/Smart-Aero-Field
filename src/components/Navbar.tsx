@@ -23,11 +23,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
         {/* App Logo & Brand */}
         <div className="flex items-center space-x-2.5 sm:space-x-3">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white p-0.5 shadow-inner overflow-hidden flex items-center justify-center flex-shrink-0 border-2 border-[#4E9F3D]">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white p-0.5 shadow-md overflow-hidden flex items-center justify-center flex-shrink-0 border-2 border-[#D8E9A8]">
             <img
               src="/logo.png"
               alt="Smart Aero Field Logo"
-              className="w-full h-full object-cover scale-[1.12]"
+              className="w-full h-full object-cover rounded-full"
               onError={(e) => {
                 // Fallback to text icon if image fails
                 (e.target as HTMLElement).style.display = 'none';
