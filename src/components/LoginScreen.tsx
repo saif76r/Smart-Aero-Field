@@ -11,10 +11,18 @@ import {
   Sprout, 
   ArrowRight,
   ShieldCheck,
-  Languages
+  Languages,
+  AlertCircle,
+  Loader2,
+  UserCheck
 } from 'lucide-react';
 import { Language } from '../types';
 import { BANGLADESH_DISTRICTS } from '../data/bangladeshAgriData';
+import { 
+  verifyFarmerLogin, 
+  registerFarmerAccount, 
+  normalizePhone 
+} from '../lib/firestoreService';
 
 interface LoginScreenProps {
   language: Language;
@@ -34,49 +42,143 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   // Mode: 'login' | 'register'
   const [mode, setMode] = useState<'login' | 'register'>('login');
   
-  // Login fields
-  const [loginPhone, setLoginPhone] = useState<string>('01711-234567');
-  const [loginPassword, setLoginPassword] = useState<string>('123456');
-  const [loginDistrict, setLoginDistrict] = useState<string>('Rajshahi');
+  // Loading & error states
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [notRegisteredAttempt, setNotRegisteredAttempt] = useState<string | null>(null);
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
+
+  // Login fields - clean and empty (no dummy presets)
+  const [loginPhone, setLoginPhone] = useState<string>('');
+  const [loginPassword, setLoginPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
-  const [loginError, setLoginError] = useState<string | null>(null);
 
-  // Register fields
-  const [regName, setRegName] = useState<string>('Md. Nasirul Islam');
+  // Register fields - clean and empty
+  const [regName, setRegName] = useState<string>('');
   const [regPhone, setRegPhone] = useState<string>('');
-  const [regDistrict, setRegDistrict] = useState<string>('Rajshahi');
+  const [regPin, setRegPin] = useState<string>('');
+  const [showRegPin, setShowRegPin] = useState<boolean>(false);
+  const [regDistrict, setRegDistrict] = useState<string>('ঢাকা');
   const [regCrop, setRegCrop] = useState<string>('Rice (Aman)');
-  const [regLandSize, setRegLandSize] = useState<string>('3.5');
+  const [regLandSize, setRegLandSize] = useState<string>('১.০');
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Handle Login submission
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginPhone.trim()) {
-      setLoginError(isBn ? 'অনুগ্রহ করে মোবাইল নম্বর লিখুন' : 'Please enter your mobile number');
+    setLoginError(null);
+    setNotRegisteredAttempt(null);
+
+    const cleanInputPhone = normalizePhone(loginPhone);
+    if (!cleanInputPhone) {
+      setLoginError(isBn ? 'অনুগ্রহ করে আপনার মোবাইল নম্বর লিখুন' : 'Please enter your mobile number');
       return;
     }
-    setLoginError(null);
-    onLoginSuccess({
-      name: 'Md. Nasirul Islam',
-      phone: loginPhone,
-      district: loginDistrict,
-      landSize: '3.5',
-    });
+    if (!loginPassword.trim()) {
+      setLoginError(isBn ? 'অনুগ্রহ করে আপনার গোপন পিন বা পাসওয়ার্ড লিখুন' : 'Please enter your password / PIN');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await verifyFarmerLogin(loginPhone, loginPassword);
+
+      if (!result.success) {
+        if (result.errorType === 'NOT_REGISTERED') {
+          setNotRegisteredAttempt(loginPhone);
+          setLoginError(
+            isBn 
+              ? '❌ এই মোবাইল নম্বরটি নিবন্ধিত নয়! অ্যাপটি ব্যবহারের আগে অনুগ্রহ করে নিচে "নতুন নিবন্ধন" করুন।'
+              : '❌ This mobile number is not registered! Please create an account before logging in.'
+          );
+        } else if (result.errorType === 'INVALID_PIN') {
+          setLoginError(
+            isBn
+              ? 'ভুল পিন বা পাসওয়ার্ড! অনুগ্রহ করে সঠিক পিন প্রদান করুন।'
+              : 'Incorrect PIN or password. Please try again.'
+          );
+        } else {
+          setLoginError(result.error || (isBn ? 'লগইন করা সম্ভব হয়নি' : 'Login failed'));
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      if (result.user) {
+        setSuccessNotice(isBn ? `স্বাগতম, ${result.user.name}!` : `Welcome back, ${result.user.name}!`);
+        setTimeout(() => {
+          onLoginSuccess(result.user!);
+        }, 500);
+      }
+    } catch (err) {
+      console.error(err);
+      setLoginError(isBn ? 'সংযোগ সমস্যা, আবার চেষ্টা করুন' : 'Network error, please try again');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  // Handle Register submission
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regName.trim() || !regPhone.trim()) {
-      setLoginError(isBn ? 'নাম এবং মোবাইল নম্বর বাধ্যতামূলক' : 'Name and mobile number are required');
+    setLoginError(null);
+    setNotRegisteredAttempt(null);
+
+    if (!regName.trim()) {
+      setLoginError(isBn ? 'কৃষকের পুরো নাম লিখুন' : 'Please enter your full name');
       return;
     }
+    const cleanPhone = normalizePhone(regPhone);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setLoginError(isBn ? 'সঠিক মোবাইল নম্বর লিখুন (যেমন: 017XXXXXXXX)' : 'Please enter a valid mobile number');
+      return;
+    }
+    if (!regPin.trim() || regPin.trim().length < 4) {
+      setLoginError(isBn ? 'কমপক্ষে ৪ ডিজিটের একটি পিন বা পাসওয়ার্ড লিখুন' : 'Please enter a PIN (at least 4 digits)');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await registerFarmerAccount({
+        name: regName.trim(),
+        phone: regPhone.trim(),
+        pin: regPin.trim(),
+        district: regDistrict,
+        landSize: regLandSize,
+        crop: regCrop,
+      });
+
+      if (!result.success) {
+        setLoginError(result.error || (isBn ? 'নিবন্ধন করা সম্ভব হয়নি' : 'Registration failed'));
+        setIsLoading(false);
+        return;
+      }
+
+      if (result.user) {
+        setSuccessNotice(isBn ? `নিবন্ধন সফল হয়েছে! স্বাগতম, ${result.user.name}।` : `Registration successful! Welcome, ${result.user.name}.`);
+        setTimeout(() => {
+          onLoginSuccess(result.user!);
+        }, 600);
+      }
+    } catch (err) {
+      console.error(err);
+      setLoginError(isBn ? 'সংযোগ সমস্যা, আবার চেষ্টা করুন' : 'Network error, please try again');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Quick switch from unregistered warning to registration tab
+  const handleSwitchToRegister = () => {
+    setMode('register');
+    if (notRegisteredAttempt) {
+      setRegPhone(notRegisteredAttempt);
+    }
     setLoginError(null);
-    onLoginSuccess({
-      name: regName,
-      phone: regPhone,
-      district: regDistrict,
-      landSize: regLandSize,
-    });
+    setNotRegisteredAttempt(null);
   };
 
   return (
@@ -143,6 +245,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               onClick={() => {
                 setMode('login');
                 setLoginError(null);
+                setNotRegisteredAttempt(null);
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer text-center ${
                 mode === 'login'
@@ -157,6 +260,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               onClick={() => {
                 setMode('register');
                 setLoginError(null);
+                setNotRegisteredAttempt(null);
               }}
               className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer text-center ${
                 mode === 'register'
@@ -171,9 +275,32 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
         {/* Form Body */}
         <div className="p-5 sm:p-6">
+          {/* Success Notice */}
+          {successNotice && (
+            <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs rounded-xl font-bold flex items-center space-x-2 animate-in fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <span>{successNotice}</span>
+            </div>
+          )}
+
+          {/* Unregistered Alert Banner with Quick Switch Button */}
           {loginError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl font-medium">
-              {loginError}
+            <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl font-medium space-y-2">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 leading-relaxed">{loginError}</div>
+              </div>
+
+              {notRegisteredAttempt && (
+                <button
+                  type="button"
+                  onClick={handleSwitchToRegister}
+                  className="w-full mt-1.5 py-2 px-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold rounded-lg text-xs transition-all flex items-center justify-center space-x-1.5 shadow-sm cursor-pointer"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>{isBn ? '👉 এখনই নিবন্ধন করুন (বিনামূল্যে)' : '👉 Register Now (Free)'}</span>
+                </button>
+              )}
             </div>
           )}
 
@@ -183,29 +310,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center">
                   <Phone className="w-3.5 h-3.5 mr-1.5 text-[#1E5128]" />
-                  <span>{isBn ? 'মোবাইল নম্বর' : 'Mobile Number'}</span>
+                  <span>{isBn ? 'নিবন্ধিত মোবাইল নম্বর' : 'Registered Mobile Number'}</span>
                 </label>
                 <input
-                  type="text"
+                  type="tel"
                   value={loginPhone}
-                  onChange={(e) => setLoginPhone(e.target.value)}
-                  placeholder="017XXXXXXXX"
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1E5128] focus:bg-white transition-all"
+                  onChange={(e) => {
+                    setLoginPhone(e.target.value);
+                    if (loginError) setLoginError(null);
+                  }}
+                  placeholder={isBn ? 'যেমন: 017XXXXXXXX' : 'e.g. 017XXXXXXXX'}
+                  required
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1E5128] focus:bg-white transition-all placeholder:text-gray-400 placeholder:font-normal"
                 />
+                <p className="text-[10px] text-gray-500 mt-1">
+                  {isBn ? '* পূর্বে নিবন্ধন করা মোবাইল নম্বরটি লিখুন' : '* Enter your previously registered phone number'}
+                </p>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center">
                   <Lock className="w-3.5 h-3.5 mr-1.5 text-[#1E5128]" />
-                  <span>{isBn ? 'পাসওয়ার্ড / পিন' : 'Password / PIN'}</span>
+                  <span>{isBn ? 'পিন বা পাসওয়ার্ড' : 'PIN / Password'}</span>
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••"
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1E5128] focus:bg-white transition-all pr-10"
+                    onChange={(e) => {
+                      setLoginPassword(e.target.value);
+                      if (loginError) setLoginError(null);
+                    }}
+                    placeholder={isBn ? 'আপনার গোপন পিন (কমপক্ষে ৪ সংখ্যা)' : '••••••'}
+                    required
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1E5128] focus:bg-white transition-all pr-10 placeholder:text-gray-400 placeholder:font-normal"
                   />
                   <button
                     type="button"
@@ -217,7 +355,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 </div>
               </div>
 
-              {/* Remember Me & Forgot PIN Row */}
+              {/* Remember Me & Switch to Register Prompt */}
               <div className="flex items-center justify-between pt-0.5">
                 <label className="flex items-center space-x-2 text-xs text-gray-600 cursor-pointer select-none">
                   <input
@@ -226,29 +364,36 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="rounded border-gray-300 text-[#1E5128] focus:ring-[#1E5128] w-4 h-4 cursor-pointer"
                   />
-                  <span className="font-medium">{isBn ? 'আমাকে মনে রাখুন' : 'Remember me'}</span>
+                  <span className="font-medium">{isBn ? 'মনে রাখুন' : 'Remember me'}</span>
                 </label>
 
-                <a
-                  href="#forgot"
-                  onClick={(e) => { 
-                    e.preventDefault(); 
-                    alert(isBn ? 'আপনার নম্বরে পিন পাঠানো হয়েছে।' : 'A reset PIN was sent to your phone.'); 
-                  }} 
-                  className="text-xs text-[#1E5128] font-bold hover:underline"
+                <button
+                  type="button"
+                  onClick={handleSwitchToRegister}
+                  className="text-xs text-[#1E5128] font-bold hover:underline cursor-pointer"
                 >
-                  {isBn ? 'পিন ভুলে গেছেন?' : 'Forgot PIN?'}
-                </a>
+                  {isBn ? 'অ্যাকাউন্ট নেই? নিবন্ধন' : 'No account? Register'}
+                </button>
               </div>
 
               {/* Primary Submit Button */}
               <div className="pt-1">
                 <button
                   type="submit"
-                  className="w-full py-3 bg-[#1E5128] hover:bg-[#163E1E] active:scale-[0.99] text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                  disabled={isLoading}
+                  className="w-full py-3 bg-[#1E5128] hover:bg-[#163E1E] active:scale-[0.99] text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm cursor-pointer disabled:opacity-60"
                 >
-                  <LogIn className="w-4 h-4 text-[#D8E9A8]" />
-                  <span>{isBn ? 'লগইন করুন' : 'Sign In'}</span>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#D8E9A8]" />
+                      <span>{isBn ? 'যাচাই করা হচ্ছে...' : 'Verifying account...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-4 h-4 text-[#D8E9A8]" />
+                      <span>{isBn ? 'লগইন করুন' : 'Sign In'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -256,35 +401,65 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             /* MODE: REGISTER */
             <form onSubmit={handleRegister} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                  {isBn ? 'কৃষকের পুরো নাম' : 'Farmer Full Name'}
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center">
+                  <UserCheck className="w-3.5 h-3.5 mr-1.5 text-[#1E5128]" />
+                  <span>{isBn ? 'কৃষকের পুরো নাম *' : 'Farmer Full Name *'}</span>
                 </label>
                 <input
                   type="text"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
-                  placeholder="e.g. Md. Nasirul Islam"
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#1E5128] outline-none focus:bg-white"
+                  placeholder={isBn ? 'যেমন: মো: রফিকুল ইসলাম' : 'e.g. Md. Rafiqul Islam'}
+                  required
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#1E5128] outline-none focus:bg-white placeholder:text-gray-400 placeholder:font-normal"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                  {isBn ? 'মোবাইল নম্বর' : 'Mobile Number'}
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center">
+                  <Phone className="w-3.5 h-3.5 mr-1.5 text-[#1E5128]" />
+                  <span>{isBn ? 'মোবাইল নম্বর *' : 'Mobile Number *'}</span>
                 </label>
                 <input
                   type="tel"
                   value={regPhone}
                   onChange={(e) => setRegPhone(e.target.value)}
-                  placeholder="01XXXXXXXXX"
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#1E5128] outline-none focus:bg-white"
+                  placeholder={isBn ? 'যেমন: 017XXXXXXXX' : '01XXXXXXXXX'}
+                  required
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#1E5128] outline-none focus:bg-white placeholder:text-gray-400 placeholder:font-normal"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center">
+                  <Lock className="w-3.5 h-3.5 mr-1.5 text-[#1E5128]" />
+                  <span>{isBn ? 'গোপন পিন বা পাসওয়ার্ড (৪-৬ সংখ্যা) *' : 'PIN / Password (4-6 digits) *'}</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showRegPin ? 'text' : 'password'}
+                    value={regPin}
+                    onChange={(e) => setRegPin(e.target.value)}
+                    placeholder="যেমন: 1234"
+                    maxLength={10}
+                    required
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#1E5128] outline-none focus:bg-white pr-10 placeholder:text-gray-400 placeholder:font-normal"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPin(!showRegPin)}
+                    className="absolute right-3.5 top-3 text-gray-400 hover:text-gray-700 cursor-pointer"
+                  >
+                    {showRegPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                    {isBn ? 'জেলা' : 'District'}
+                  <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center">
+                    <MapPin className="w-3.5 h-3.5 mr-1 text-[#1E5128]" />
+                    <span>{isBn ? 'জেলা' : 'District'}</span>
                   </label>
                   <select
                     value={regDistrict}
@@ -305,17 +480,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   </label>
                   <input
                     type="number"
-                    step="0.5"
+                    step="0.1"
+                    min="0"
                     value={regLandSize}
                     onChange={(e) => setRegLandSize(e.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#1E5128] outline-none focus:bg-white"
+                    placeholder="১.০"
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3.5 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-[#1E5128] outline-none focus:bg-white placeholder:text-gray-400"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                  {isBn ? 'প্রধান ফসল' : 'Primary Crop'}
+                <label className="block text-xs font-bold text-gray-700 mb-1.5 flex items-center">
+                  <Sprout className="w-3.5 h-3.5 mr-1.5 text-[#1E5128]" />
+                  <span>{isBn ? 'প্রধান ফসল' : 'Primary Crop'}</span>
                 </label>
                 <select
                   value={regCrop}
@@ -327,16 +505,41 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   <option value="Potato">{isBn ? 'আলু' : 'Potato'}</option>
                   <option value="Wheat">{isBn ? 'গম' : 'Wheat'}</option>
                   <option value="Maize">{isBn ? 'ভুট্টা' : 'Maize / Corn'}</option>
+                  <option value="Jute">{isBn ? 'পাট' : 'Jute'}</option>
+                  <option value="Vegetables">{isBn ? 'শাকসবজি' : 'Vegetables'}</option>
                 </select>
               </div>
 
               <div className="pt-1">
                 <button
                   type="submit"
-                  className="w-full py-3 bg-[#1E5128] hover:bg-[#163E1E] active:scale-[0.99] text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                  disabled={isLoading}
+                  className="w-full py-3 bg-[#1E5128] hover:bg-[#163E1E] active:scale-[0.99] text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm cursor-pointer disabled:opacity-60"
                 >
-                  <UserPlus className="w-4 h-4 text-[#D8E9A8]" />
-                  <span>{isBn ? 'নিবন্ধন সম্পন্ন করুন' : 'Complete Registration'}</span>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#D8E9A8]" />
+                      <span>{isBn ? 'নিবন্ধন করা হচ্ছে...' : 'Registering...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 text-[#D8E9A8]" />
+                      <span>{isBn ? 'নিবন্ধন সম্পন্ন করুন' : 'Complete Registration'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setLoginError(null);
+                  }}
+                  className="text-xs text-gray-500 hover:text-[#1E5128] font-semibold cursor-pointer"
+                >
+                  {isBn ? 'ইতিমধ্যে নিবন্ধিত? লগইন করুন' : 'Already registered? Sign In'}
                 </button>
               </div>
             </form>
@@ -345,7 +548,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           {/* Footer Security Badge */}
           <div className="mt-5 pt-3 border-t border-gray-100 flex items-center justify-center space-x-1.5 text-xs text-gray-500 font-medium">
             <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span className="text-center">{isBn ? 'ডিএই ও নাসা স্যাটেলাইট সংহত' : 'Integrated with DAE & NASA Feeds'}</span>
+            <span className="text-center">{isBn ? 'ডিএই ও নাসা স্যাটেলাইট সংহত • ফায়ারবেস ক্লাউড সংরক্ষিত' : 'DAE & NASA Satellite Feeds • Firebase Cloud Secured'}</span>
           </div>
         </div>
       </div>

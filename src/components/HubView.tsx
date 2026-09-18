@@ -107,10 +107,10 @@ export const HubView: React.FC<HubViewProps> = ({
     },
     {
       id: 'supplies',
-      nameEn: 'Input Supplies Calculator',
-      nameBn: 'সার ও বীজ ক্যালকুলেটর',
-      descEn: 'Estimate fertilizer and seed costs',
-      descBn: 'জমির মাপ অনুযায়ী প্রয়োজনীয় সার ও বীজের খরচ',
+      nameEn: 'Supplies & Profit/Loss Calculator',
+      nameBn: 'উপকরণ খরচ ও লাভ-ক্ষতি ক্যালকুলেটর',
+      descEn: 'Fertilizer, seed, pesticide expenses & crop profit/loss',
+      descBn: 'সার, কীটনাশক, বীজ ক্রয় ও ফসল বিক্রির লাভ-ক্ষতির হিসাব',
       icon: (
         <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white">
           <Calculator className="w-6 h-6 text-white stroke-[2.2]" />

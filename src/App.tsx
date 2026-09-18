@@ -34,6 +34,9 @@ import { SettingsModal } from './components/SettingsModal';
 import { LoginScreen } from './components/LoginScreen';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { DynamicIconPic } from './components/DynamicIconPic';
+import { testConnection, ensureAuthenticatedUser, auth } from './lib/firebase';
+import { signOut } from 'firebase/auth';
+import { saveFarmerProfileToFirestore } from './lib/firestoreService';
 
 interface FarmerUser {
   name: string;
@@ -44,6 +47,7 @@ interface FarmerUser {
 
 export function App() {
   // App Global State
+  const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(false);
   const [language, setLanguage] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem('krishi_language');
@@ -87,7 +91,16 @@ export function App() {
   const [currentUser, setCurrentUser] = useState<FarmerUser | null>(() => {
     try {
       const saved = localStorage.getItem('krishi_farmer_user');
-      return saved ? JSON.parse(saved) : null;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Clear out the dummy preset from before registration was required
+        if (parsed?.name === 'Md. Nasirul Islam' && parsed?.phone === '01711-234567') {
+          localStorage.removeItem('krishi_farmer_user');
+          return null;
+        }
+        return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -138,8 +151,36 @@ export function App() {
     } catch (e) {
       console.warn('LocalStorage error', e);
     }
+    signOut(auth).catch(() => {});
     setCurrentUser(null);
   };
+
+  // Firebase initialization, server connection test and auth session setup
+  useEffect(() => {
+    let isMounted = true;
+    testConnection().then((connected) => {
+      if (isMounted) {
+        setIsFirebaseConnected(connected);
+      }
+    }).catch(() => {
+      if (isMounted) setIsFirebaseConnected(false);
+    });
+
+    ensureAuthenticatedUser().then((user) => {
+      if (user && currentUser) {
+        saveFarmerProfileToFirestore({
+          name: currentUser.name,
+          phone: currentUser.phone,
+          district: currentUser.district,
+          farmSizeAcres: parseFloat(currentUser.landSize) || 0,
+        }).catch((e) => console.warn('Firestore profile sync note:', e));
+      }
+    }).catch((e) => console.warn('Auth note:', e));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser]);
 
   // IF NOT LOGGED IN -> CHECK IF WELCOME / LANGUAGE STEP IS COMPLETED FIRST
   if (!currentUser) {
@@ -189,6 +230,7 @@ export function App() {
           setChatTopic(null);
           setIsChatOpen(true);
         }}
+        isFirebaseConnected={isFirebaseConnected}
       />
 
       {/* Main Screen Container */}
@@ -466,6 +508,38 @@ export function App() {
               </div>
             </div>
 
+            {/* Direct Feature Banner: Input Supplies & Profit/Loss Calculator */}
+            <div
+              id="supplies-profit-calculator-banner"
+              onClick={() => setCurrentTab('supplies')}
+              className="bg-white rounded-2xl p-3.5 sm:p-4 border border-emerald-300 shadow-2xs hover:shadow-sm transition-all cursor-pointer flex items-center justify-between group bg-gradient-to-r from-emerald-50/90 via-white to-indigo-50/70 gap-2"
+            >
+              <div className="flex items-center space-x-3 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-[#1E5128] text-white flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                  <TrendingUp className="w-6 h-6 text-[#D8E9A8]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+                    <h3 className="font-extrabold text-xs sm:text-sm text-gray-900 group-hover:text-[#1E5128] transition-colors truncate">
+                      {isBn ? 'উপকরণ খরচ ও লাভ-ক্ষতি ক্যালকুলেটর' : 'Supplies & Profit/Loss Calculator'}
+                    </h3>
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded flex-shrink-0">
+                      {isBn ? 'হিসাব খাতা' : 'Ledger'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                    {isBn
+                      ? 'সার, কীটনাশক, বীজ ক্রয় তালিকা এবং ফসল বিক্রির লাভ/ক্ষতির সঠিক হিসাব'
+                      : 'Fertilizer, pesticide & seed costs with instant net profit/loss calculation'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="w-8 h-8 rounded-full bg-emerald-100/70 group-hover:bg-emerald-200 text-[#1E5128] flex items-center justify-center transition-colors flex-shrink-0">
+                <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </div>
+
             {/* AI Suggestion Card (Screenshot 4) */}
             <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-green-100 rounded-2xl p-3.5 sm:p-4 border border-emerald-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center space-x-3">
@@ -631,6 +705,7 @@ export function App() {
             language={language}
             onBack={() => setCurrentTab('home')}
             onOpenChatWithTopic={openChatWithTopic}
+            currentUser={currentUser}
           />
         )}
 
@@ -678,6 +753,7 @@ export function App() {
         onClose={() => setIsChatOpen(false)}
         language={language}
         initialPrompt={chatTopic}
+        currentUser={currentUser}
       />
 
       {/* NOTIFICATIONS MODAL (Screenshot 21) */}

@@ -57,6 +57,20 @@ export interface ChatMessage {
   sender: 'user' | 'bot';
   text: string;
   timestamp: string;
+  createdAt?: string;
+  language?: string;
+  userId?: string;
+}
+
+export interface CalculatorSummaryRecord {
+  userId: string;
+  totalCost: number;
+  totalRevenue: number;
+  netProfitLoss: number;
+  status: 'profit' | 'loss' | 'breakeven';
+  expensesCount: number;
+  cropName: string;
+  updatedAt: string;
 }
 
 export interface MarketItem {
@@ -105,3 +119,58 @@ export interface NotificationItem {
   date: string;
   read: boolean;
 }
+
+export type SupplyCategoryType = 
+  | 'fertilizer' 
+  | 'pesticide' 
+  | 'fungicide' 
+  | 'seed' 
+  | 'irrigation' 
+  | 'labor' 
+  | 'tillage' 
+  | 'transport_other';
+
+export interface SupplyExpenseItem {
+  id: string;
+  category: SupplyCategoryType;
+  name: string;
+  amount: number;
+  unit: string;
+  cost: number;
+  dateAdded?: string;
+  note?: string;
+}
+
+export interface CropSaleRecord {
+  cropName: string;
+  quantity?: number;
+  unit?: string;
+  pricePerUnit?: number;
+  totalSaleAmount: number;
+  note?: string;
+}
+
+export interface FarmerProfile {
+  name: string;
+  phone?: string;
+  division?: string;
+  district?: string;
+  upazila?: string;
+  farmSizeAcres?: number;
+  soilType?: string;
+  primaryCrops?: string[];
+  experienceYears?: number;
+  updatedAt?: string;
+}
+
+export interface RegisteredFarmer {
+  name: string;
+  phone: string;
+  pin?: string;
+  district: string;
+  landSize: string;
+  crop?: string;
+  authUid?: string;
+  registeredAt: string;
+}
+
