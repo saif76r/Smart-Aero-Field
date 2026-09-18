@@ -5,6 +5,12 @@ export interface PredictionResult {
   best_crop: string;
   precip_7d: number;
   temp_7d_avg: number;
+  precipitation?: number;
+  temperature?: number;
+  risk_confidence?: number;
+  dataSource?: string;
+  baselineMethod?: string;
+  nasaObservationDate?: string;
   isFallback?: boolean;
 }
 

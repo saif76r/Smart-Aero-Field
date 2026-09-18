@@ -39,8 +39,8 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
       id: 'init-1',
       sender: 'bot',
       text: isBn
-        ? 'নমস্কার / আসসালামু আলাইকুম! আমি আপনার কৃষি গাইড এআই কৃষিবিদ। ফসলের রোগ, সার ও কীটনাশকের সঠিক মাত্রা, সেচ বা আবহাওয়া বিষয়ক যেকোনো প্রশ্ন জিজ্ঞেস করতে পারেন।'
-        : 'Hello! I am your KrishiGuide AI Agronomist. Ask me any question regarding crop diseases, exact fertilizer dosage, pest outbreaks, or localized weather warnings.',
+        ? 'নমস্কার / আসসালামু আলাইকুম! আমি আপনার স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ। ফসলের রোগ, সার ও কীটনাশকের সঠিক মাত্রা, সেচ বা আবহাওয়া বিষয়ক যেকোনো প্রশ্ন জিজ্ঞেস করতে পারেন।'
+        : 'Hello! I am your Smart Aero Field AI Agronomist. Ask me any question regarding crop diseases, exact fertilizer dosage, pest outbreaks, or localized weather warnings.',
       timestamp: 'Just now',
     },
   ]);
@@ -54,8 +54,8 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
           id: 'init-1',
           sender: 'bot',
           text: language === 'bn'
-            ? 'নমস্কার / আসসালামু আলাইকুম! আমি আপনার কৃষি গাইড এআই কৃষিবিদ। ফসলের রোগ, সার ও কীটনাশকের সঠিক মাত্রা, সেচ বা আবহাওয়া বিষয়ক যেকোনো প্রশ্ন জিজ্ঞেস করতে পারেন।'
-            : 'Hello! I am your KrishiGuide AI Agronomist. Ask me any question regarding crop diseases, exact fertilizer dosage, pest outbreaks, or localized weather warnings.',
+            ? 'নমস্কার / আসসালামু আলাইকুম! আমি আপনার স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ। ফসলের রোগ, সার ও কীটনাশকের সঠিক মাত্রা, সেচ বা আবহাওয়া বিষয়ক যেকোনো প্রশ্ন জিজ্ঞেস করতে পারেন।'
+            : 'Hello! I am your Smart Aero Field AI Agronomist. Ask me any question regarding crop diseases, exact fertilizer dosage, pest outbreaks, or localized weather warnings.',
           timestamp: 'Just now',
         },
       ]);
@@ -160,7 +160,7 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
             <div>
               <div className="flex items-center space-x-1.5">
                 <h3 className="font-bold text-sm sm:text-base leading-tight">
-                  {chatLanguage === 'bn' ? 'কৃষি গাইড এআই কৃষিবিদ' : 'KrishiGuide AI Agronomist'}
+                  {chatLanguage === 'bn' ? 'স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ' : 'Smart Aero Field AI Agronomist'}
                 </h3>
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               </div>

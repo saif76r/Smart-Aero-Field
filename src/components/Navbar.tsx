@@ -26,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white p-0.5 shadow-inner overflow-hidden flex items-center justify-center flex-shrink-0 border-2 border-[#4E9F3D]">
             <img
               src="/logo.png"
-              alt="KrishiGuide Logo"
+              alt="Smart Aero Field Logo"
               className="w-full h-full object-cover scale-[1.12]"
               onError={(e) => {
                 // Fallback to text icon if image fails
@@ -37,7 +37,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div>
             <div className="flex items-center space-x-1.5">
               <span className="font-extrabold text-base sm:text-lg md:text-xl tracking-tight text-white leading-tight">
-                Krishi<span className="text-[#D8E9A8]">Guide</span>
+                Smart Aero <span className="text-[#D8E9A8]">Field</span>
               </span>
               <span className="bg-[#4E9F3D] text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded text-white tracking-wide uppercase">
                 {isBn ? 'কৃষি' : 'AI Agri'}

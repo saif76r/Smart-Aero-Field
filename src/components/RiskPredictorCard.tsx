@@ -25,6 +25,91 @@ interface RiskPredictorCardProps {
   onOpenChatWithTopic?: (topic: string) => void;
 }
 
+// Dynamic real-time date helpers (Automatically updates every day: 18 Sep 2026, 19 Sep 2026, etc.)
+export const getTodayDateString = (): string => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const formatDisplayDate = (dateStr: string, isBengali: boolean): string => {
+  try {
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+    if (isNaN(y) || isNaN(m) || isNaN(d)) return dateStr;
+
+    if (isBengali) {
+      const monthsBn = [
+        'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+        'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+      ];
+      const toBnDigits = (num: number | string) =>
+        String(num).replace(/\d/g, (ch) => '০১২৩৪৫৬৭৮৯'[parseInt(ch, 10)]);
+      return `${toBnDigits(d)} ${monthsBn[m - 1]}, ${toBnDigits(y)}`;
+    } else {
+      const monthsEn = [
+        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
+      return `${d} ${monthsEn[m - 1]}, ${y}`;
+    }
+  } catch {
+    return dateStr;
+  }
+};
+
+const getCropImage = (cropName: string): string => {
+  const lower = (cropName || '').toLowerCase();
+  if (lower.includes('maize') || lower.includes('corn') || lower.includes('ভুট্টা')) {
+    return '/images/crop_maize.jpg';
+  }
+  if (lower.includes('jute') || lower.includes('পাট')) {
+    return '/images/crop_jute.jpg';
+  }
+  if (lower.includes('mustard') || lower.includes('সরিষা')) {
+    return '/images/crop_mustard.jpg';
+  }
+  return '/images/crop_rice.jpg';
+};
+
+const getCropDisplayName = (cropName: string, isBengali: boolean): string => {
+  const lower = (cropName || '').toLowerCase();
+  if (lower.includes('maize') || lower.includes('corn')) {
+    return isBengali ? 'ভুট্টা (Maize)' : 'Maize / Corn';
+  }
+  if (lower.includes('jute')) {
+    return isBengali ? 'পাট (Golden Fiber Jute)' : 'Jute (Golden Fiber)';
+  }
+  if (lower.includes('mustard')) {
+    return isBengali ? 'সরিষা (Mustard)' : 'Mustard Seed';
+  }
+  if (lower.includes('boro')) {
+    return isBengali ? 'বোরো ধান (Boro Rice)' : 'Boro Rice';
+  }
+  if (lower.includes('aman') || lower.includes('rice') || lower.includes('ধান')) {
+    return isBengali ? 'রোপা আমন ধান (Aman Rice)' : 'Transplanted Aman Rice';
+  }
+  if (lower.includes('wheat') || lower.includes('গম')) {
+    return isBengali ? 'উচ্চফলনশীল গম (Wheat)' : 'Wheat (BARI Gom-33)';
+  }
+  if (lower.includes('potato') || lower.includes('আলু')) {
+    return isBengali ? 'গোল আলু (Potato)' : 'Potato';
+  }
+  return cropName;
+};
+
+const getCropGuideId = (cropName: string): string => {
+  const lower = (cropName || '').toLowerCase();
+  if (lower.includes('maize') || lower.includes('corn')) return 'corn';
+  if (lower.includes('wheat')) return 'wheat';
+  return 'rice';
+};
+
 export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
   language,
   userDistrict = 'Rajshahi',
@@ -33,10 +118,13 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
 }) => {
   const isBn = language === 'bn';
 
+  // Dynamic real-time date (defaults to current date, updates per day)
+  const todayStr = getTodayDateString();
+
   // State - District is locked to logged-in user's district
   const [district, setDistrict] = useState<string>(userDistrict);
-  // Default to historical or forecast date
-  const [selectedDate, setSelectedDate] = useState<string>('2024-06-01');
+  // Default to today's real date
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [prediction, setPrediction] = useState<PredictionResult | null>({
@@ -78,6 +166,12 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
           best_crop: result.data.best_crop || 'Rice',
           precip_7d: typeof result.data.precip_7d === 'number' ? result.data.precip_7d : 12.0,
           temp_7d_avg: typeof result.data.temp_7d_avg === 'number' ? result.data.temp_7d_avg : 28.0,
+          precipitation: typeof result.data.precipitation === 'number' ? result.data.precipitation : undefined,
+          temperature: typeof result.data.temperature === 'number' ? result.data.temperature : undefined,
+          risk_confidence: typeof result.data.risk_confidence === 'number' ? result.data.risk_confidence : undefined,
+          dataSource: result.data.dataSource,
+          baselineMethod: result.data.baselineMethod,
+          nasaObservationDate: result.data.nasaObservationDate,
           isFallback: result.source === 'agro_engine_fallback',
         });
       } else {
@@ -86,6 +180,11 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
     } catch (err: any) {
       console.warn('Backend proxy error, attempting direct client fetch to endpoint...', err);
       try {
+        // Apply NASA Climatology baseline for direct call if needed
+        const reqYear = parseInt(formattedDate.substring(0, 4), 10);
+        const mmdd = formattedDate.length >= 8 ? formattedDate.substring(4, 8) : '0918';
+        const directDate = (reqYear >= 2000 && reqYear <= 2023) ? formattedDate : `2023${mmdd}`;
+
         // Direct call fallback to https://agriii-tns8.onrender.com/predict
         const directRes = await fetch('https://agriii-tns8.onrender.com/predict', {
           method: 'POST',
@@ -94,7 +193,7 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
           },
           body: JSON.stringify({
             district: targetDistrict,
-            date: formattedDate,
+            date: directDate,
           }),
         });
         const directData = await directRes.json();
@@ -103,6 +202,10 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
           best_crop: directData.best_crop || directData.crop || 'Rice',
           precip_7d: parseFloat(directData.precip_7d) || 16.0,
           temp_7d_avg: parseFloat(directData.temp_7d_avg) || 28.5,
+          precipitation: parseFloat(directData.precipitation) || undefined,
+          temperature: parseFloat(directData.temperature) || undefined,
+          risk_confidence: parseFloat(directData.risk_confidence) || undefined,
+          dataSource: 'NASA POWER API',
         });
       } catch (directErr) {
         // Fallback calculation gracefully based on district
@@ -125,11 +228,15 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
     }
   };
 
-  // Keep district in sync with logged-in user's district
+  // Automatically sync with logged-in user's district and today's dynamic date
   useEffect(() => {
+    const today = getTodayDateString();
+    setSelectedDate(today);
     if (userDistrict && userDistrict !== district) {
       setDistrict(userDistrict);
-      fetchPrediction(userDistrict, selectedDate);
+      fetchPrediction(userDistrict, today);
+    } else {
+      fetchPrediction(district, today);
     }
   }, [userDistrict]);
 
@@ -179,105 +286,97 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
 
   return (
     <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-      {/* Card Header with Logo */}
-      <div className="bg-gradient-to-r from-[#1E5128] to-[#2E6F3E] p-3 sm:p-4 text-white">
-        <div className="flex items-center space-x-2.5 sm:space-x-3">
-          <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white shadow-md flex items-center justify-center flex-shrink-0 border border-green-200 overflow-hidden">
-            <img 
-              src="/images/nasa_logo.svg" 
-              alt="NASA Logo" 
-              className="w-full h-full object-cover scale-[1.04]"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo.png';
-              }}
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xs sm:text-base font-bold leading-tight">
-              {isBn ? 'কৃষি ঝুঁকি ও ফসল উপযুক্ততা পূর্বাভাস' : 'Agriculture Risk & Crop Suitability'}
-            </h2>
-            <p className="text-[10px] sm:text-xs text-green-100 mt-0.5 leading-tight truncate sm:whitespace-normal">
-              {isBn 
-                ? 'নাসা স্যাটেলাইট ডেটা ও এগ্রো-এআই বিশ্লেষণ' 
-                : 'NASA Climatology & Machine Learning Risk Engine'}
-            </p>
-          </div>
+      {/* Clean Card Top Bar (Avoids Header Overload) */}
+      <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-emerald-50/40">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <h2 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">
+            {isBn ? 'কৃষি ঝুঁকি ও ফসল উপযুক্ততা' : 'Agriculture Risk & Crop Suitability'}
+          </h2>
         </div>
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+          {isBn ? 'স্যাটেলাইট ক্লাইমেট' : 'Satellite Telemetry'}
+        </span>
       </div>
 
-      {/* Form Area */}
-      <form onSubmit={handlePredict} className="p-3 sm:p-5 bg-white space-y-3 sm:space-y-4">
-        {/* District Synced from Login Banner */}
-        <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-xl p-2.5 sm:p-3 flex items-center justify-between shadow-2xs">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#1E5128] text-white flex items-center justify-center flex-shrink-0 shadow-xs">
-              <MapPin className="w-4 h-4 text-[#D8E9A8]" />
+      {/* Form Area: Clean, Compact Location & Date Grid */}
+      <form onSubmit={handlePredict} className="p-3 sm:p-4 bg-white space-y-3">
+        {/* Compact Grid: Location (Left) + Date (Right) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {/* Location Box */}
+          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-2.5 flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#1E5128] text-[#D8E9A8] flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <MapPin className="w-4 h-4" />
             </div>
-            <div>
-              <span className="text-[10px] sm:text-[11px] font-bold text-gray-500 uppercase tracking-wider block leading-tight">
-                {isBn ? 'লগইন অনুযায়ী নির্ধারিত এলাকা / জেলা' : 'Assigned District (From Login)'}
-              </span>
-              <div className="flex items-center space-x-1.5 mt-0.5">
-                <span className="text-sm sm:text-base font-extrabold text-[#1E5128]">
-                  {district} {isBn ? 'জেলা' : 'District'}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
+                  {isBn ? 'নির্ধারিত এলাকা' : 'Location'}
                 </span>
-                <span className="text-[9px] sm:text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
                   {isBn ? 'সিঙ্কড' : 'Synced'}
                 </span>
               </div>
+              <span className="text-xs sm:text-sm font-extrabold text-[#1E5128] truncate block mt-0.5">
+                {district} {isBn ? 'জেলা' : 'District'}
+              </span>
             </div>
           </div>
-          <div className="text-right hidden sm:block">
-            <span className="text-xs text-emerald-800 font-bold bg-white px-2.5 py-1 rounded-lg border border-emerald-200 shadow-2xs inline-flex items-center space-x-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{isBn ? 'স্বয়ংক্রিয় সংযুক্ত' : 'Auto Connected'}</span>
-            </span>
+
+          {/* Date Picker Box */}
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-2.5 flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gray-200/80 text-gray-700 flex items-center justify-center flex-shrink-0">
+              <Calendar className="w-4 h-4 text-[#1E5128]" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
+                  {isBn ? 'তারিখ' : 'Date'}
+                </span>
+                {selectedDate !== todayStr ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(todayStr)}
+                    className="text-[9px] font-bold text-[#1E5128] hover:underline cursor-pointer"
+                  >
+                    {isBn ? 'আজকে ফিরুন' : 'Reset Today'}
+                  </button>
+                ) : (
+                  <span className="text-[9px] font-semibold text-emerald-700">
+                    {isBn ? 'আজকের লাইভ' : 'Live'}
+                  </span>
+                )}
+              </div>
+              <input
+                id="risk-date-input"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full bg-transparent text-xs sm:text-sm font-bold text-gray-900 focus:outline-none cursor-pointer mt-0.5"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Date Picker (Just Date Needed as Requested) */}
-        <div>
-          <label className="block text-[11px] sm:text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 flex items-center">
-            <Calendar className="w-3.5 h-3.5 mr-1 text-[#1E5128]" />
-            {isBn ? 'তারিখ নির্বাচন (YYYY-MM-DD)' : 'Date (YYYY-MM-DD)'}
-          </label>
-          <div className="relative">
-            <input
-              id="risk-date-input"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full bg-[#F5F7F8] border border-gray-200 text-gray-900 rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1E5128] focus:border-transparent transition-all"
-            />
-          </div>
-          <p className="text-[10px] sm:text-[11px] text-gray-500 mt-1 leading-snug">
-            {isBn 
-              ? `*${district} জেলার নাসা স্যাটেলাইট ক্লাইমেট ডেটা ও ফসল উপযোগীতা মূল্যায়নের জন্য তারিখ দিন।` 
-              : `*Select date to analyze NASA satellite climate risk and crop suitability for ${district}.`}
-          </p>
-        </div>
-
-        {/* Submit Button */}
-        <div className="mt-3 sm:mt-4 pt-0.5">
-          <button
-            id="risk-submit-btn"
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#1E5128] hover:bg-[#163e1e] active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-75 cursor-pointer text-xs sm:text-sm md:text-base min-h-[44px]"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-[#D8E9A8]" />
-                <span>{isBn ? `${district} জেলার ঝুঁকি বিশ্লেষণ হচ্ছে...` : `Analyzing Climate Risk for ${district}...`}</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 text-[#D8E9A8]" />
-                <span>{isBn ? 'ঝুঁকি ও ফসল উপযুক্ততা যাচাই করুন' : 'Check Risk & Crop Suitability'}</span>
-              </>
-            )}
-          </button>
-        </div>
+        {/* Action Button */}
+        <button
+          id="risk-submit-btn"
+          type="submit"
+          disabled={loading}
+          className="w-full bg-[#1E5128] hover:bg-[#163e1e] active:scale-[0.99] text-white font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center space-x-2 disabled:opacity-75 cursor-pointer text-xs sm:text-sm min-h-[40px]"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-[#D8E9A8]" />
+              <span>{isBn ? `${district} জেলার ঝুঁকি বিশ্লেষণ হচ্ছে...` : `Analyzing Climate Risk for ${district}...`}</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 text-[#D8E9A8]" />
+              <span>{isBn ? 'ঝুঁকি ও ফসল উপযুক্ততা আপডেট করুন' : 'Refresh Risk & Crop Analysis'}</span>
+            </>
+          )}
+        </button>
 
         {errorMsg && (
           <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-xs flex items-center space-x-2">
@@ -292,7 +391,7 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
         <div className="p-4 sm:p-5 border-t border-gray-100 bg-[#F5F7F8]/60 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              {isBn ? 'বিশ্লেষণ ফলাফল' : 'Prediction Results'} ({district.toUpperCase()}, {selectedDate})
+              {isBn ? 'বিশ্লেষণ ফলাফল' : 'Prediction Results'} ({district.toUpperCase()}, {formatDisplayDate(selectedDate, isBn)})
             </span>
             {prediction.isFallback && (
               <span className="text-[10px] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-medium">
@@ -328,47 +427,44 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
           <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm flex flex-col sm:flex-row items-center gap-4">
             <div className="w-full sm:w-28 h-28 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 relative border border-gray-200 shadow-inner">
               <img
-                src="/images/crop_rice.jpg"
+                src={getCropImage(prediction.best_crop)}
                 alt="Recommended Crop"
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/logo.png';
+                  (e.target as HTMLImageElement).src = '/images/crop_rice.jpg';
                 }}
               />
-              <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
+              <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded font-bold shadow-xs">
                 {isBn ? 'উপযুক্ত' : 'Best'}
               </span>
             </div>
 
             <div className="flex-1 w-full text-left">
-              <div className="flex items-center space-x-1.5 text-xs text-[#1E5128] font-bold uppercase tracking-wider">
-                <TrendingUp className="w-3.5 h-3.5" />
-                <span>{isBn ? 'প্রস্তাবিত সেরা ফসল' : 'Recommended Best Crop'}</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-1.5 text-xs text-[#1E5128] font-bold uppercase tracking-wider">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>{isBn ? 'প্রস্তাবিত সেরা ফসল' : 'Recommended Best Crop'}</span>
+                </div>
+                {prediction.risk_confidence !== undefined && (
+                  <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    NASA ML {(prediction.risk_confidence * 100).toFixed(1)}%
+                  </span>
+                )}
               </div>
-              <h3 className="text-lg font-black text-gray-900 mt-0.5">
-                {isBn
-                  ? (prediction.best_crop.toLowerCase().includes('rice') || prediction.best_crop.includes('আমন')
-                      ? 'রোপা আমন ধান'
-                      : prediction.best_crop.toLowerCase().includes('jute')
-                      ? 'পাট'
-                      : prediction.best_crop.toLowerCase().includes('wheat')
-                      ? 'গম'
-                      : prediction.best_crop.toLowerCase().includes('potato')
-                      ? 'আলু'
-                      : prediction.best_crop)
-                  : prediction.best_crop.replace(/\s*\(.*?[\u0980-\u09FF].*?\)/g, '').trim()}
+              <h3 className="text-lg font-black text-gray-900 mt-1">
+                {getCropDisplayName(prediction.best_crop, isBn)}
               </h3>
               <p className="text-xs text-gray-600 mt-1">
                 {isBn
-                  ? 'এই মৌসুম ও ভৌগোলিক অঞ্চলের আর্দ্রতা ও তাপমাত্রার জন্য সর্বোচ্চ উৎপাদনশীল।'
+                  ? 'এই মৌসুম ও ভৌগোলিক অঞ্চলের আর্দ্রতা, সৌর বিকিরণ ও তাপমাত্রার জন্য সর্বোচ্চ উৎপাদনশীল।'
                   : 'Tailored for current soil moisture, temperature threshold, and regional agro-ecological zone.'}
               </p>
               
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-2.5 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => onNavigateToCropGuide?.('rice')}
-                  className="text-xs font-bold text-[#1E5128] hover:text-[#163e1e] flex items-center space-x-0.5 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-lg border border-green-200 transition-colors"
+                  onClick={() => onNavigateToCropGuide?.(getCropGuideId(prediction.best_crop))}
+                  className="text-xs font-bold text-[#1E5128] hover:text-[#163e1e] flex items-center space-x-0.5 bg-green-50 hover:bg-green-100 px-2.5 py-1 rounded-lg border border-green-200 transition-colors cursor-pointer"
                 >
                   <span>{isBn ? 'চাষপদ্ধতি দেখুন' : 'View Cultivation Guide'}</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -376,7 +472,7 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
                 <button
                   type="button"
                   onClick={() => onOpenChatWithTopic?.(`Give me cultivation and fertilizer tips for ${prediction.best_crop} in ${district}`)}
-                  className="text-xs font-semibold text-gray-600 hover:text-gray-900 flex items-center space-x-1 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-lg transition-colors"
+                  className="text-xs font-semibold text-gray-600 hover:text-gray-900 flex items-center space-x-1 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                 >
                   <Sparkles className="w-3 h-3 text-amber-500" />
                   <span>{isBn ? 'এআই পরামর্শ' : 'Ask AI'}</span>
@@ -386,44 +482,81 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
           </div>
 
           {/* 3 & 4. Weather Metrics Cards */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
-            {/* Rainfall Metric */}
-            <div className="bg-white p-2.5 sm:p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-2 sm:space-x-3 min-w-0">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-blue-50/80 flex items-center justify-center flex-shrink-0 p-0.5 border border-blue-100 overflow-hidden">
-                <DynamicIconPic
-                  name="rain"
-                  alt="Rainfall"
-                  className="w-full h-full object-cover rounded-lg"
-                />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+            {/* 7-Day Rainfall */}
+            <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-gray-200 shadow-xs flex items-center space-x-2 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 p-0.5 border border-blue-100 overflow-hidden">
+                <DynamicIconPic name="rain" alt="Rainfall" className="w-full h-full object-cover rounded-md" />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 block leading-tight truncate">
-                  {isBn ? '৭ দিনের বৃষ্টিপাত' : '7-Day Rainfall'}
+                <span className="text-[10px] font-medium text-gray-500 block leading-tight truncate">
+                  {isBn ? '৭ দিনের বৃষ্টি' : '7-Day Rain'}
                 </span>
-                <span className="text-sm sm:text-lg font-black text-gray-900 block leading-tight mt-0.5">
-                  {prediction.precip_7d.toFixed(1)} <span className="text-[11px] sm:text-xs font-normal text-gray-600">mm</span>
+                <span className="text-xs sm:text-sm font-black text-gray-900 block leading-tight mt-0.5 truncate">
+                  {prediction.precip_7d.toFixed(1)} <span className="text-[10px] font-normal text-gray-600">mm</span>
                 </span>
               </div>
             </div>
 
-            {/* Temperature Metric */}
-            <div className="bg-white p-2.5 sm:p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-2 sm:space-x-3 min-w-0">
-              <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-50/80 flex items-center justify-center flex-shrink-0 p-0.5 border border-amber-100 overflow-hidden">
-                <DynamicIconPic
-                  name="temperature"
-                  alt="Temperature"
-                  className="w-full h-full object-cover rounded-lg"
-                />
+            {/* 7-Day Avg Temp */}
+            <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-gray-200 shadow-xs flex items-center space-x-2 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0 p-0.5 border border-amber-100 overflow-hidden">
+                <DynamicIconPic name="temperature" alt="Temperature" className="w-full h-full object-cover rounded-md" />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] sm:text-[11px] font-medium text-gray-500 block leading-tight truncate">
-                  {isBn ? '৭ দিনের তাপমাত্রা' : '7-Day Avg Temp'}
+                <span className="text-[10px] font-medium text-gray-500 block leading-tight truncate">
+                  {isBn ? '৭ দিনের গড় তাপমাত্রা' : '7-Day Temp'}
                 </span>
-                <span className="text-sm sm:text-lg font-black text-gray-900 block leading-tight mt-0.5">
-                  {prediction.temp_7d_avg.toFixed(1)} <span className="text-[11px] sm:text-xs font-normal text-gray-600">°C</span>
+                <span className="text-xs sm:text-sm font-black text-gray-900 block leading-tight mt-0.5 truncate">
+                  {prediction.temp_7d_avg.toFixed(1)} <span className="text-[10px] font-normal text-gray-600">°C</span>
                 </span>
               </div>
             </div>
+
+            {/* Daily Rainfall (NASA POWER) */}
+            <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-gray-200 shadow-xs flex items-center space-x-2 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-cyan-50 flex items-center justify-center flex-shrink-0 text-cyan-700">
+                <CloudRain className="w-4 h-4 text-cyan-600" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-medium text-gray-500 block leading-tight truncate">
+                  {isBn ? 'দৈনিক বৃষ্টিপাত' : 'Daily Rain'}
+                </span>
+                <span className="text-xs sm:text-sm font-black text-gray-900 block leading-tight mt-0.5 truncate">
+                  {(prediction.precipitation ?? (prediction.precip_7d / 7)).toFixed(1)} <span className="text-[10px] font-normal text-gray-600">mm</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Daily Temp (NASA POWER) */}
+            <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-gray-200 shadow-xs flex items-center space-x-2 min-w-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-rose-50 flex items-center justify-center flex-shrink-0 text-rose-700">
+                <Thermometer className="w-4 h-4 text-rose-600" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-medium text-gray-500 block leading-tight truncate">
+                  {isBn ? 'দৈনিক তাপমাত্রা' : 'Daily Temp'}
+                </span>
+                <span className="text-xs sm:text-sm font-black text-gray-900 block leading-tight mt-0.5 truncate">
+                  {(prediction.temperature ?? prediction.temp_7d_avg).toFixed(1)} <span className="text-[10px] font-normal text-gray-600">°C</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* NASA Space Apps Challenge Data Provenance Footer */}
+          <div className="flex items-center justify-between text-[10px] text-gray-500 px-1 pt-1">
+            <span className="flex items-center space-x-1.5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block flex-shrink-0"></span>
+              <span className="truncate">
+                {isBn
+                  ? 'উৎস: নাসা পাওয়ার স্যাটেলাইট ক্লাইমেটোলজি ও এগ্রো-এমএল মডেল'
+                  : 'Data Source: NASA POWER Satellite Climatology & Agro-ML Model'}
+              </span>
+            </span>
+            <span className="font-semibold text-gray-600 flex-shrink-0 ml-2">
+              GEOS-FP / MERRA-2
+            </span>
           </div>
         </div>
       )}

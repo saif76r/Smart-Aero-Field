@@ -9,10 +9,14 @@ import {
   FlaskRound as Flask, 
   BookOpen, 
   ChevronRight,
-  Bot
+  Bot,
+  CloudRain,
+  Droplets,
+  Wind
 } from 'lucide-react';
 import { Language, NotificationItem } from './types';
 import { INITIAL_NOTIFICATIONS } from './data/bangladeshAgriData';
+import { getDistrictWeather, getLiveDateDisplay } from './data/weatherData';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { LeafDiseaseScanner } from './components/LeafDiseaseScanner';
@@ -166,6 +170,12 @@ export function App() {
     );
   }
 
+  // Live Weather & Date for the logged-in Farmer's district
+  const currentWeather = getDistrictWeather(currentUser.district);
+  const liveDate = getLiveDateDisplay(language === 'bn');
+  const toBnDigits = (val: number | string) =>
+    String(val).replace(/\d/g, (ch) => '০১২৩৪৫৬৭৮৯'[parseInt(ch, 10)]);
+
   // IF LOGGED IN -> RENDER KRISHIGUIDE MOBILE APP
   return (
     <div className="min-h-screen bg-[#F5F7F8] text-[#111827] flex flex-col font-sans selection:bg-[#4E9F3D] selection:text-white">
@@ -188,7 +198,7 @@ export function App() {
         {currentTab === 'home' && (
           <div className="space-y-4 sm:space-y-5">
             
-            {/* Farmer Welcome Hero Banner (Screenshot 4) */}
+            {/* Farmer Welcome Hero Banner with Live Weather on Right (Screenshot 4) */}
             <div className="relative rounded-3xl overflow-hidden shadow-sm border border-gray-200/80 bg-gradient-to-br from-[#1E5128] via-[#266333] to-[#16401f] text-white">
               <div className="absolute inset-0 opacity-20 mix-blend-overlay pointer-events-none">
                 <img
@@ -198,44 +208,122 @@ export function App() {
                 />
               </div>
 
-              <div className="relative p-4 sm:p-6">
-                <div className="flex items-start sm:items-center justify-between gap-2.5">
-                  <div className="min-w-0">
-                    <span className="text-xs font-bold text-[#D8E9A8] uppercase tracking-wider block">
-                      {isBn ? 'স্বাগতম' : 'Welcome'}
-                    </span>
-                    <h1 className="text-lg sm:text-2xl font-black mt-0.5 tracking-tight truncate">
-                      {currentUser.name}
-                    </h1>
-                    <p className="text-xs text-green-100 mt-1 leading-snug">
+              <div className="relative p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
+                  {/* Left Column: Greeting, Farmer Name, Crop Advice & Stats */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center space-x-2.5">
+                      {/* Brand Logo Avatar */}
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white shadow-md border-2 border-white/90 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        <img
+                          src="/logo.png"
+                          alt="Smart Aero Field Logo"
+                          className="w-full h-full object-cover scale-[1.12]"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs font-bold text-[#D8E9A8] uppercase tracking-wider block">
+                            {isBn ? 'স্বাগতম' : 'Welcome'}
+                          </span>
+                          <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                          <span className="text-[10px] font-semibold text-green-200 truncate">
+                            {currentUser.district}
+                          </span>
+                        </div>
+                        <h1 className="text-lg sm:text-xl font-black tracking-tight truncate">
+                          {currentUser.name}
+                        </h1>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-green-100 mt-1.5 leading-snug">
                       {isBn
-                        ? `${currentUser.district} জেলার আবহাওয়া আমন ধান পরিচর্যার জন্য উপযোগী।`
+                        ? `${currentUser.district} জেলার বর্তমান আবহাওয়া আমন ধান পরিচর্যার জন্য উপযোগী।`
                         : `Current conditions in ${currentUser.district} are favorable for paddy cultivation.`}
                     </p>
                   </div>
 
-                  <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-white shadow-md border-2 border-white/90 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    <img
-                      src="/logo.png"
-                      alt="KrishiGuide Logo"
-                      className="w-full h-full object-cover scale-[1.12]"
-                      onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                </div>
+                  {/* Right Column: Today's Live Weather Widget (Requested by User) */}
+                  <div
+                    id="hero-todays-weather-widget"
+                    onClick={() => setCurrentTab('nasa')}
+                    title={isBn ? 'সম্পূর্ণ ৭ দিনের আবহাওয়া ও নাসা স্যাটেলাইট তথ্য দেখতে ক্লিক করুন' : "Click to view NASA Earth data & 7-day weather forecast"}
+                    className="flex-shrink-0 bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-md border border-white/25 hover:border-white/40 rounded-2xl p-2.5 sm:p-3 transition-all duration-150 cursor-pointer shadow-md hover:shadow-lg group sm:min-w-[190px]"
+                  >
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#D8E9A8]">
+                          {isBn ? 'আজকের আবহাওয়া' : "Today's Weather"}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-green-200 group-hover:text-white transition-colors">
+                        {liveDate.dayOfWeek}, {liveDate.dayFormatted}
+                      </span>
+                    </div>
 
-                {/* Quick Stats Pill Strip */}
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-3.5 sm:mt-4 pt-3 border-t border-white/20 text-xs">
-                  <div className="bg-white/15 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-semibold flex items-center gap-1.5 text-[11px] sm:text-xs">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span>{currentUser.landSize || '3.5'} {isBn ? 'একর জমি' : 'Acres'}</span>
+                    {/* Main Temperature & Weather Icon Row */}
+                    <div className="flex items-center justify-between gap-2.5">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/20 border border-white/30 overflow-hidden shadow-inner flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                          <img
+                            src={currentWeather.iconSrc}
+                            alt={currentWeather.conditionEn}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/images/weather/partly_cloudy.jpg';
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <span className="text-lg sm:text-xl font-black text-white leading-none block">
+                            {isBn ? `+${toBnDigits(currentWeather.temp)}°সে` : `+${currentWeather.temp}°C`}
+                          </span>
+                          <span className="text-[10px] sm:text-[11px] font-semibold text-green-100 block mt-0.5 whitespace-nowrap">
+                            {isBn ? currentWeather.conditionBn : currentWeather.conditionEn}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Mini Agro-climatic Metrics */}
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] pl-2.5 border-l border-white/20">
+                        <div className="flex items-center space-x-1 text-green-100" title={isBn ? 'বাতাসের আর্দ্রতা' : 'Humidity'}>
+                          <Droplets className="w-3 h-3 text-cyan-300 flex-shrink-0" />
+                          <span className="font-bold">{isBn ? `${toBnDigits(currentWeather.humidity)}%` : `${currentWeather.humidity}%`}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-green-100" title={isBn ? 'বৃষ্টির সম্ভাবনা' : 'Rain Chance'}>
+                          <CloudRain className="w-3 h-3 text-blue-300 flex-shrink-0" />
+                          <span className="font-bold">{isBn ? `${toBnDigits(currentWeather.rainChance)}%` : `${currentWeather.rainChance}%`}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-green-100 col-span-2" title={isBn ? 'বাতাসের গতিবেগ' : 'Wind Speed'}>
+                          <Wind className="w-3 h-3 text-emerald-300 flex-shrink-0" />
+                          <span className="font-bold">
+                            {isBn ? `${toBnDigits(currentWeather.windSpeed)} কিমি/ঘ` : `${currentWeather.windSpeed} km/h`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Link Hint */}
+                    <div className="mt-2 pt-1.5 border-t border-white/15 flex items-center justify-between text-[10px] text-green-200 group-hover:text-white transition-colors">
+                      <span className="font-medium text-emerald-200">
+                        {currentUser.district}
+                      </span>
+                      <span className="font-bold text-[#D8E9A8] flex items-center space-x-0.5 group-hover:translate-x-0.5 transition-transform">
+                        <span>{isBn ? '৭ দিনের পূর্বাভাস' : '7-Day Forecast'}</span>
+                        <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </div>
                   </div>
-                  <div className="bg-white/15 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-semibold flex items-center gap-1.5 text-[11px] sm:text-xs">
-                    <span className="w-2 h-2 rounded-full bg-yellow-300" />
-                    <span>{currentUser.district}</span>
-                  </div>
+
                 </div>
               </div>
             </div>

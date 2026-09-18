@@ -10,9 +10,7 @@ import {
   Headphones, 
   Sparkles,
   ChevronRight,
-  Settings,
-  Globe,
-  Check
+  Settings
 } from 'lucide-react';
 import { Language } from '../types';
 import { DynamicIconPic } from './DynamicIconPic';
@@ -40,28 +38,12 @@ export const HubView: React.FC<HubViewProps> = ({
 
   const services = [
     {
-      id: 'settings',
-      nameEn: 'Settings & Language',
-      nameBn: 'সেটিংস ও ভাষা পরিবর্তন',
-      descEn: 'Switch English/Bangla & app preferences',
-      descBn: 'বাংলা অথবা ইংরেজি ভাষা নির্বাচন করুন',
-      icon: (
-        <div className="w-full h-full bg-[#1E5128] flex items-center justify-center text-white">
-          <Settings className="w-6 h-6 text-[#D8E9A8]" />
-        </div>
-      ),
-      badge: language === 'bn' ? '🇧🇩 বাংলা' : '🌐 English',
-      color: 'bg-emerald-50/80 border-emerald-300 ring-1 ring-emerald-200',
-      action: () => setIsSettingsOpen(true),
-    },
-    {
       id: 'disease',
       nameEn: 'Disease Detection',
       nameBn: 'রোগ শনাক্তকরণ',
       descEn: 'Instant AI leaf pathology diagnosis',
       descBn: 'ক্যামেরা দিয়ে পাতার রোগ শনাক্ত ও প্রতিকার',
       icon: <DynamicIconPic name="disease" alt="Disease" className="w-full h-full object-cover" />,
-      badge: 'AI Vision',
       color: 'bg-emerald-50 border-emerald-200',
     },
     {
@@ -103,7 +85,6 @@ export const HubView: React.FC<HubViewProps> = ({
           />
         </div>
       ),
-      badge: 'Live NASA',
       color: 'bg-blue-50 border-blue-200',
     },
     {
@@ -122,7 +103,6 @@ export const HubView: React.FC<HubViewProps> = ({
       descEn: '5-step crop harvest optimizer',
       descBn: 'সর্বোচ্চ ফলন নিশ্চিতকরণ ও ঝুঁকি হ্রাস',
       icon: <DynamicIconPic name="yield" alt="Yield" className="w-full h-full object-cover" />,
-      badge: 'Top Yield',
       color: 'bg-teal-50 border-teal-200',
     },
     {
@@ -145,7 +125,6 @@ export const HubView: React.FC<HubViewProps> = ({
       descEn: '24/7 dedicated agronomy consultation',
       descBn: 'ফসলের রোগ ও সারের বিষয়ে সরাসরি প্রশ্নোত্তর',
       icon: <DynamicIconPic name="bot" alt="AI Agronomist" className="w-full h-full object-cover" />,
-      badge: 'Gemini 3.8',
       color: 'bg-yellow-50 border-yellow-200',
       action: onOpenChat,
     },
@@ -161,62 +140,12 @@ export const HubView: React.FC<HubViewProps> = ({
         </h2>
         <p className="text-xs text-green-100 mt-1 relative z-10">
           {isBn
-            ? 'ক্ষুদ্র কৃষকদের জন্য আধুনিক স্যাটেলাইট, এআই প্রযুক্তি ও ভাষা সেটিংস'
-            : 'Access modern agro-intelligence, diagnostic tools, and language preferences.'}
+            ? 'ক্ষুদ্র কৃষকদের জন্য আধুনিক স্যাটেলাইট ও এআই প্রযুক্তি সেবা'
+            : 'Access modern agro-intelligence, diagnostic tools, and advisory services.'}
         </p>
       </div>
 
-      {/* Quick Language Selector Bar directly in Services */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#1E5128]/10 text-[#1E5128] flex items-center justify-center flex-shrink-0">
-            <Globe className="w-5 h-5 text-[#1E5128]" />
-          </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                {isBn ? 'ভাষা নির্বাচন / Language' : 'App Language / ভাষা'}
-              </h3>
-              <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">
-                {language === 'bn' ? 'বাংলা' : 'English'}
-              </span>
-            </div>
-            <p className="text-[11px] text-gray-500">
-              {isBn ? 'বাংলা অথবা ইংরেজিতে পুরো সাইট দেখতে সিলেক্ট করুন' : 'Select English or Bangla to switch the whole site'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center bg-gray-100/80 p-1 rounded-xl gap-1 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => onChangeLanguage('bn')}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
-              language === 'bn'
-                ? 'bg-[#1E5128] text-white shadow-xs'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <span>🇧🇩 বাংলা</span>
-            {language === 'bn' && <Check className="w-3 h-3 text-[#D8E9A8]" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onChangeLanguage('en')}
-            className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer ${
-              language === 'en'
-                ? 'bg-[#1E5128] text-white shadow-xs'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <span>🌐 English</span>
-            {language === 'en' && <Check className="w-3 h-3 text-[#D8E9A8]" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Grid of Services (Including Settings & Language) */}
+      {/* Grid of 8 Core Agricultural Services */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         {services.map((item) => (
           <div
@@ -235,16 +164,9 @@ export const HubView: React.FC<HubViewProps> = ({
                 {item.icon}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-bold text-sm text-gray-900 group-hover:text-[#1E5128] transition-colors truncate">
-                    {isBn ? item.nameBn : item.nameEn}
-                  </h3>
-                  {item.badge && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#1E5128] text-[#D8E9A8] flex-shrink-0 whitespace-nowrap">
-                      {item.badge}
-                    </span>
-                  )}
-                </div>
+                <h3 className="font-bold text-sm text-gray-900 group-hover:text-[#1E5128] transition-colors truncate">
+                  {isBn ? item.nameBn : item.nameEn}
+                </h3>
                 <p className="text-xs text-gray-500 mt-0.5 leading-snug truncate">
                   {isBn ? item.descBn : item.descEn}
                 </p>
@@ -254,6 +176,31 @@ export const HubView: React.FC<HubViewProps> = ({
             <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#1E5128] group-hover:translate-x-1 transition-all flex-shrink-0 ml-2" />
           </div>
         ))}
+      </div>
+
+      {/* Settings & Language Option Placed at the Very Bottom (Sober Niche) */}
+      <div
+        id="bottom-settings-language-card"
+        onClick={() => setIsSettingsOpen(true)}
+        className="p-4 rounded-2xl border-2 border-emerald-300/80 bg-white hover:bg-emerald-50/40 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
+      >
+        <div className="flex items-center space-x-3.5 min-w-0">
+          <div className="w-12 h-12 rounded-2xl bg-[#1E5128] flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+            <Settings className="w-6 h-6 text-[#D8E9A8]" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="font-bold text-sm sm:text-base text-gray-900 group-hover:text-[#1E5128] transition-colors truncate">
+              {isBn ? 'সেটিংস ও ভাষা পরিবর্তন' : 'Settings & Language'}
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5 leading-snug truncate">
+              {isBn
+                ? 'বাংলা অথবা ইংরেজি ভাষা ও অ্যাপের পছন্দসমূহ পরিবর্তন করুন'
+                : 'Switch English/Bangla & app preferences'}
+            </p>
+          </div>
+        </div>
+
+        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#1E5128] group-hover:translate-x-1 transition-all flex-shrink-0 ml-2" />
       </div>
 
       {/* Full Settings Modal */}

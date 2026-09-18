@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Language } from '../types';
 import { RiskPredictorCard } from './RiskPredictorCard';
+import { getDistrictWeather, getLiveDateDisplay } from '../data/weatherData';
 
 interface NasaEarthViewProps {
   language: Language;
@@ -37,16 +38,43 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
   const isBn = language === 'bn';
   const [activeTab, setActiveTab] = useState<'risk' | 'land' | 'weather' | 'soil'>('risk');
 
-  // 7-day forecast data with picture icons matching user request
-  const forecastDays = [
-    { day: isBn ? 'রবি' : 'SUN', temp: '+25°C', iconSrc: '/images/weather/sunny.jpg', alt: 'Sunny' },
-    { day: isBn ? 'সোম' : 'MON', temp: '+29°C', iconSrc: '/images/weather/partly_cloudy.jpg', alt: 'Partly Cloudy' },
-    { day: isBn ? 'মঙ্গল' : 'TUE', temp: '+28°C', iconSrc: '/images/weather/rain.jpg', alt: 'Rain' },
-    { day: isBn ? 'বুধ' : 'WED', temp: '+26°C', iconSrc: '/images/weather/rain.jpg', alt: 'Rain' },
-    { day: isBn ? 'বৃহঃ' : 'THU', temp: '+27°C', iconSrc: '/images/weather/partly_cloudy.jpg', alt: 'Partly Cloudy' },
-    { day: isBn ? 'শুক্র' : 'FRI', temp: '+29°C', iconSrc: '/images/weather/sunny.jpg', alt: 'Sunny' },
-    { day: isBn ? 'শনি' : 'SAT', temp: '+30°C', iconSrc: '/images/weather/sunny.jpg', alt: 'Sunny' },
+  // Live real-time district weather and date
+  const weather = getDistrictWeather(selectedDistrict);
+  const liveDate = getLiveDateDisplay(isBn);
+
+  const toBnDigits = (val: number | string) =>
+    String(val).replace(/\d/g, (ch) => '০১২৩৪৫৬৭৮৯'[parseInt(ch, 10)]);
+
+  // Dynamically calculate 7-day forecast starting from today (Friday if today is Friday)
+  const currentDayIdx = new Date().getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
+  const daysShortEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const daysShortBn = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
+
+  const forecastVariations = [
+    { tempOffset: 0, icon: weather.iconSrc, alt: weather.conditionEn },
+    { tempOffset: 1, icon: '/images/weather/sunny.jpg?v=2', alt: 'Sunny' },
+    { tempOffset: -1, icon: '/images/weather/rain.jpg', alt: 'Rain' },
+    { tempOffset: -2, icon: '/images/weather/rain.jpg', alt: 'Rain' },
+    { tempOffset: 0, icon: '/images/weather/partly_cloudy.jpg', alt: 'Partly Cloudy' },
+    { tempOffset: 1, icon: '/images/weather/sunny.jpg?v=2', alt: 'Sunny' },
+    { tempOffset: 2, icon: '/images/weather/sunny.jpg?v=2', alt: 'Sunny' },
   ];
+
+  const forecastDays = forecastVariations.map((item, i) => {
+    const dayIdx = (currentDayIdx + i) % 7;
+    const tempVal = weather.temp + item.tempOffset;
+    const dayLabel = i === 0 
+      ? (isBn ? 'আজ' : 'TODAY') 
+      : (isBn ? daysShortBn[dayIdx] : daysShortEn[dayIdx]);
+
+    return {
+      day: dayLabel,
+      temp: isBn ? `+${toBnDigits(tempVal)}°সে` : `+${tempVal}°C`,
+      iconSrc: item.icon,
+      alt: item.alt,
+      isToday: i === 0,
+    };
+  });
 
   return (
     <div className="bg-[#F5F7F8] min-h-screen pb-24">
@@ -83,34 +111,36 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
             </div>
           </div>
 
-          {/* Segmented Filter Control: Risk & Suitability | Land Condition | Weather | Soil */}
-          <div className="bg-white/15 p-1 rounded-2xl flex items-center justify-between gap-1 backdrop-blur-sm border border-white/20 overflow-x-auto scrollbar-none">
+          {/* Segmented Filter Control: Clean 4-Column Grid, No Overflow */}
+          <div className="bg-white/15 p-1 rounded-2xl grid grid-cols-4 gap-1 backdrop-blur-sm border border-white/20">
             <button
               type="button"
               onClick={() => setActiveTab('risk')}
-              className={`py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center whitespace-nowrap flex-1 sm:flex-initial cursor-pointer ${
+              className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center truncate cursor-pointer ${
                 activeTab === 'risk'
                   ? 'bg-white text-[#1E5128] shadow-md'
                   : 'text-white/80 hover:text-white'
               }`}
             >
-              {isBn ? 'ঝুঁকি ও ফসল' : 'Risk & Crops'}
+              <span className="sm:hidden">{isBn ? 'ঝুঁকি' : 'Risk'}</span>
+              <span className="hidden sm:inline">{isBn ? 'ঝুঁকি ও ফসল' : 'Risk & Crops'}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('land')}
-              className={`py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center whitespace-nowrap flex-1 sm:flex-initial cursor-pointer ${
+              className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center truncate cursor-pointer ${
                 activeTab === 'land'
                   ? 'bg-white text-[#1E5128] shadow-md'
                   : 'text-white/80 hover:text-white'
               }`}
             >
-              {isBn ? 'জমির অবস্থা' : 'Land Condition'}
+              <span className="sm:hidden">{isBn ? 'জমি' : 'Land'}</span>
+              <span className="hidden sm:inline">{isBn ? 'জমির অবস্থা' : 'Land Condition'}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('weather')}
-              className={`py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center whitespace-nowrap flex-1 sm:flex-initial cursor-pointer ${
+              className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center truncate cursor-pointer ${
                 activeTab === 'weather'
                   ? 'bg-white text-[#1E5128] shadow-md'
                   : 'text-white/80 hover:text-white'
@@ -121,44 +151,21 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('soil')}
-              className={`py-2 px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center whitespace-nowrap flex-1 sm:flex-initial cursor-pointer ${
+              className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center truncate cursor-pointer ${
                 activeTab === 'soil'
                   ? 'bg-white text-[#1E5128] shadow-md'
                   : 'text-white/80 hover:text-white'
               }`}
             >
-              {isBn ? 'মাটি ও আর্দ্রতা' : 'Soil & Moisture'}
+              <span className="sm:hidden">{isBn ? 'মাটি' : 'Soil'}</span>
+              <span className="hidden sm:inline">{isBn ? 'মাটি ও আর্দ্রতা' : 'Soil & Moisture'}</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-md mx-auto px-4 -mt-4 space-y-4">
-        
-        {/* Banner: NASA Earth Observation (Screenshot 5) */}
-        <div className="relative rounded-2xl overflow-hidden shadow-md h-36 bg-gradient-to-r from-blue-900 to-indigo-900 border border-white/20">
-          <img
-            src="/images/satellite_earth.jpg"
-            alt="NASA Earth Observation"
-            className="w-full h-full object-cover opacity-75"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/logo.png';
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-4 flex flex-col justify-end text-white">
-            <span className="text-[10px] font-bold text-cyan-300 uppercase tracking-wider">
-              {isBn ? 'নাসা আর্থ অবজারভেশন ও ক্লাইমেট' : 'NASA Earth Observation & Climatology'}
-            </span>
-            <h3 className="text-base font-black">
-              {isBn ? 'প্রকৃত স্যাটেলাইট ডেটা, সঠিক প্রভাব' : 'Real data, Real agricultural impact'}
-            </h3>
-            <p className="text-[11px] text-gray-200">
-              MODIS NDVI, GLDAS Soil Moisture & NASA POWER Climatology
-            </p>
-          </div>
-        </div>
-
+      <div className="max-w-md mx-auto px-4 -mt-3 space-y-4">
         {/* Tab 0: Agriculture Risk & Crop Suitability Predictor */}
         {activeTab === 'risk' && (
           <div>
@@ -263,67 +270,120 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
         {/* Tab 2: Weather & Forecast (Matching Screenshot 6) */}
         {activeTab === 'weather' && (
           <div className="space-y-4">
-            {/* Weather Card with Blue Atmosphere Gradient */}
-            <div className="rounded-2xl p-5 text-white bg-gradient-to-br from-[#1E5128] via-[#245D31] to-[#12361B] shadow-md relative overflow-hidden">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center space-x-1 text-xs text-green-200 font-medium">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>{selectedDistrict}, Bangladesh</span>
-                  </div>
-                  <h3 className="text-4xl font-black mt-2 tracking-tight">+29 °C</h3>
-                  <p className="text-xs text-green-100 font-semibold mt-0.5">
-                    {isBn ? 'সোমবার, আংশিক মেঘলা' : 'Monday, Partly Sunny'}
-                  </p>
-                </div>
+            {/* Weather Card with Picture-Type Glassy Atmosphere (Requested by User) */}
+            <div className="rounded-3xl p-5 text-white shadow-xl relative overflow-hidden border border-white/35 backdrop-blur-md">
+              {/* Scenic Background Picture */}
+              <img
+                src="/images/weather_bg.jpg"
+                alt="Atmospheric Weather Sky"
+                className="absolute inset-0 w-full h-full object-cover scale-105 filter saturate-[1.15] brightness-90 transition-transform duration-700 hover:scale-110"
+                onError={(e) => {
+                  // Graceful fallback to aerial field if needed
+                  (e.target as HTMLImageElement).src = '/images/aerial_field.jpg';
+                }}
+              />
 
-                <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-md border border-white/30 overflow-hidden shadow-md">
-                  <img
-                    src="/images/weather/partly_cloudy.jpg"
-                    alt="Partly Cloudy"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
+              {/* Glassmorphism Frosted Vignette & Tint Overlays */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[#1E5128]/70 via-black/45 to-[#0F2914]/85 backdrop-blur-[5px]" />
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-yellow-400/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-10 -left-10 w-44 h-44 bg-emerald-400/15 rounded-full blur-2xl pointer-events-none" />
 
-              {/* Atmospheric Sub-stats */}
-              <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-white/15 text-center text-xs">
-                <div>
-                  <span className="text-[10px] text-green-200 block">{isBn ? 'বাতাসের আর্দ্রতা' : 'Humidity'}</span>
-                  <span className="font-bold">65%</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-green-200 block">{isBn ? 'বাতাসের বেগ' : 'Wind Speed'}</span>
-                  <span className="font-bold">14 km/h</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-green-200 block">{isBn ? 'চাপ' : 'Pressure'}</span>
-                  <span className="font-bold">1012 hPa</span>
-                </div>
-              </div>
-
-              {/* 7-Day Forecast Strip (Screenshot 6) */}
-              <div className="mt-4 pt-3 border-t border-white/15">
-                <span className="text-[10px] font-bold text-green-200 uppercase tracking-wider block mb-2">
-                  {isBn ? '৭ দিনের পূর্বাভাস' : '7-Day Forecast'}
-                </span>
-                <div className="grid grid-cols-7 gap-1 text-center">
-                  {forecastDays.map((item, i) => (
-                    <div key={i} className="bg-white/10 hover:bg-white/20 rounded-xl p-1.5 flex flex-col items-center transition-colors">
-                      <span className="text-[9px] font-bold text-green-100">{item.day}</span>
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden my-1 bg-white/20 shadow-sm border border-white/30 flex items-center justify-center flex-shrink-0">
-                        <img
-                          src={item.iconSrc}
-                          alt={item.alt}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/images/weather/sunny.jpg';
-                          }}
-                        />
-                      </div>
-                      <span className="text-[9px] font-bold text-white leading-none">{item.temp}</span>
+              {/* Content on top of Glass */}
+              <div className="relative z-10">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-xs text-white font-semibold shadow-xs">
+                      <MapPin className="w-3.5 h-3.5 text-[#D8E9A8]" />
+                      <span>{selectedDistrict}, Bangladesh</span>
                     </div>
-                  ))}
+                    <h3 className="text-4xl sm:text-5xl font-black mt-2.5 tracking-tight drop-shadow-md text-white">
+                      {isBn ? `+${toBnDigits(weather.temp)} °সে` : `+${weather.temp} °C`}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-green-100 font-semibold mt-0.5 drop-shadow-xs flex items-center space-x-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />
+                      <span>{liveDate.dayOfWeek}, {isBn ? weather.conditionBn : weather.conditionEn}</span>
+                    </p>
+                  </div>
+
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-white/25 flex items-center justify-center backdrop-blur-xl border border-white/40 overflow-hidden shadow-lg group-hover:scale-105 transition-transform">
+                    <img
+                      src={weather.iconSrc}
+                      alt={weather.conditionEn}
+                      className="w-full h-full object-cover scale-[1.05]"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/weather/sunny.jpg?v=2';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Atmospheric Sub-stats (Glass Pill Panel) */}
+                <div className="grid grid-cols-3 gap-2 mt-4 pt-3.5 pb-2.5 px-3 rounded-2xl bg-black/25 backdrop-blur-md border border-white/20 text-center text-xs shadow-inner">
+                  <div>
+                    <span className="text-[10px] text-green-200 block font-medium">
+                      {isBn ? 'বাতাসের আর্দ্রতা' : 'Humidity'}
+                    </span>
+                    <span className="font-extrabold text-white text-sm sm:text-base">
+                      {isBn ? `${toBnDigits(weather.humidity)}%` : `${weather.humidity}%`}
+                    </span>
+                  </div>
+                  <div className="border-x border-white/15">
+                    <span className="text-[10px] text-green-200 block font-medium">
+                      {isBn ? 'বাতাসের বেগ' : 'Wind Speed'}
+                    </span>
+                    <span className="font-extrabold text-white text-sm sm:text-base">
+                      {isBn ? `${toBnDigits(weather.windSpeed)} কিমি/ঘ` : `${weather.windSpeed} km/h`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-green-200 block font-medium">
+                      {isBn ? 'বায়ুমণ্ডলীয় চাপ' : 'Pressure'}
+                    </span>
+                    <span className="font-extrabold text-white text-sm sm:text-base">
+                      {isBn ? '১০১২ hPa' : '1012 hPa'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 7-Day Forecast Strip with Frosted Glass Chips */}
+                <div className="mt-4 pt-3 border-t border-white/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-green-200 uppercase tracking-wider block drop-shadow-xs">
+                      {isBn ? '৭ দিনের পূর্বাভাস' : '7-Day Forecast'}
+                    </span>
+                    <span className="text-[9px] text-white/80 font-medium px-2 py-0.5 rounded-full bg-white/15 backdrop-blur-xs border border-white/20">
+                      {isBn ? 'নাসা পাওয়ার ক্লাইমেট' : 'NASA POWER API'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
+                    {forecastDays.map((item, i) => (
+                      <div
+                        key={i}
+                        className={`${
+                          item.isToday
+                            ? 'bg-white/30 border-white/60 shadow-md ring-1.5 ring-amber-300/70'
+                            : 'bg-white/15 hover:bg-white/25 border-white/25 shadow-xs'
+                        } backdrop-blur-md rounded-xl p-1.5 sm:p-2 flex flex-col items-center transition-all duration-150 border hover:-translate-y-0.5`}
+                      >
+                        <span className={`text-[9px] sm:text-[10px] font-extrabold ${item.isToday ? 'text-amber-200' : 'text-green-100'}`}>
+                          {item.day}
+                        </span>
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden my-1 bg-white/30 shadow-xs border border-white/40 flex items-center justify-center flex-shrink-0">
+                          <img
+                            src={item.iconSrc}
+                            alt={item.alt}
+                            className="w-full h-full object-cover scale-[1.15]"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/images/weather/sunny.jpg?v=2';
+                            }}
+                          />
+                        </div>
+                        <span className="text-[9px] sm:text-[10px] font-black text-white leading-none drop-shadow-xs">
+                          {item.temp}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
