@@ -74,12 +74,17 @@ export interface CropGuide {
   id: string;
   nameEn: string;
   nameBn: string;
+  category?: string;
+  categoryBn?: string;
   image: string;
   bestSeason: string;
   cultivationTime: {
     aus?: string;
     aman?: string;
     boro?: string;
+    rabi?: string;
+    kharif?: string;
+    sowing?: string;
   };
   soil: string;
   seed: string;
