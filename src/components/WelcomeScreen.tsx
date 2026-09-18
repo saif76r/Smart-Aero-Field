@@ -20,7 +20,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   const isBn = language === 'bn';
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-[#143B1D] via-[#1E5128] to-[#143B1D] flex flex-col justify-center items-center px-4 py-8">
+    <div className="min-h-screen w-full bg-gradient-to-b from-[#143B1D] via-[#1E5128] to-[#143B1D] flex flex-col justify-center items-center px-4 py-8 overflow-y-auto">
       
       {/* Main Card Container */}
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden border border-emerald-900/10">

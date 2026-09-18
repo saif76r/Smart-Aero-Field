@@ -19,7 +19,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { db, auth, handleFirestoreError, OperationType, ensureAuthenticatedUser } from './firebase';
-import { SupplyExpenseItem, CropSaleRecord, FarmerProfile, RegisteredFarmer, ChatMessage, CalculatorSummaryRecord } from '../types';
+import { SupplyExpenseItem, CropSaleRecord, FarmerProfile, RegisteredFarmer, ChatMessage, CalculatorSummaryRecord, FarmerUser } from '../types';
 
 export const REGISTRY_STORAGE_KEY = 'krishi_registered_farmers_registry';
 
@@ -94,7 +94,7 @@ export async function registerFarmerAccount(data: {
   district: string;
   landSize: string;
   crop?: string;
-}): Promise<{ success: boolean; error?: string; user?: { name: string; phone: string; district: string; landSize: string } }> {
+}): Promise<{ success: boolean; error?: string; user?: FarmerUser }> {
   const cleanPhone = normalizePhone(data.phone);
   if (!cleanPhone || cleanPhone.length < 10) {
     return { success: false, error: 'সঠিক মোবাইল নম্বর লিখুন (১১ ডিজিট)' };
@@ -210,6 +210,8 @@ export async function registerFarmerAccount(data: {
       phone: registeredFarmer.phone,
       district: registeredFarmer.district,
       landSize: registeredFarmer.landSize,
+      photoUrl: registeredFarmer.photoUrl || '',
+      bio: registeredFarmer.bio || '',
     },
   };
 }
@@ -222,7 +224,7 @@ export async function verifyFarmerLogin(
   success: boolean; 
   error?: string; 
   errorType?: 'NOT_REGISTERED' | 'INVALID_PIN' | 'EMPTY_INPUT';
-  user?: { name: string; phone: string; district: string; landSize: string } 
+  user?: FarmerUser;
 }> {
   const cleanPhone = normalizePhone(rawPhone);
   if (!cleanPhone) {
@@ -301,6 +303,8 @@ export async function verifyFarmerLogin(
       phone: registeredData.phone,
       district: registeredData.district,
       landSize: registeredData.landSize,
+      photoUrl: registeredData.photoUrl || '',
+      bio: registeredData.bio || '',
     },
   };
 }
@@ -322,8 +326,26 @@ export async function saveFarmerProfileToFirestore(profile: FarmerProfile): Prom
       soilType: profile.soilType || '',
       primaryCrops: profile.primaryCrops || [],
       experienceYears: profile.experienceYears || 0,
+      photoUrl: profile.photoUrl || '',
+      bio: profile.bio || '',
       updatedAt: new Date().toISOString(),
     }, { merge: true });
+
+    // Also update registered_farmers index if phone is available
+    if (profile.phone) {
+      const cleanPhone = normalizePhone(profile.phone);
+      if (cleanPhone) {
+        const regRef = doc(db, 'registered_farmers', cleanPhone);
+        await setDoc(regRef, {
+          name: profile.name || 'কৃষক ভাই',
+          district: profile.district || 'ঢাকা',
+          landSize: String(profile.farmSizeAcres || ''),
+          photoUrl: profile.photoUrl || '',
+          bio: profile.bio || '',
+          updatedAt: new Date().toISOString(),
+        }, { merge: true });
+      }
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }

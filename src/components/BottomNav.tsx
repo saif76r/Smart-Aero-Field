@@ -6,12 +6,14 @@ interface BottomNavProps {
   currentTab: 'home' | 'hub' | 'scan' | 'nasa' | 'profile';
   onSelectTab: (tab: 'home' | 'hub' | 'scan' | 'nasa' | 'profile') => void;
   language: Language;
+  userPhotoUrl?: string;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
   currentTab,
   onSelectTab,
   language,
+  userPhotoUrl,
 }) => {
   const isBn = language === 'bn';
 
@@ -23,7 +25,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           id="nav-home-btn"
           type="button"
           onClick={() => onSelectTab('home')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 min-h-[44px] transition-all active:scale-95 cursor-pointer ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 min-h-[44px] transition-all duration-150 active:scale-90 cursor-pointer ${
             currentTab === 'home' ? 'text-[#1E5128]' : 'text-gray-400 hover:text-gray-600'
           }`}
         >
@@ -38,7 +40,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           id="nav-hub-btn"
           type="button"
           onClick={() => onSelectTab('hub')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 min-h-[44px] transition-all active:scale-95 cursor-pointer ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 min-h-[44px] transition-all duration-150 active:scale-90 cursor-pointer ${
             currentTab === 'hub' ? 'text-[#1E5128]' : 'text-gray-400 hover:text-gray-600'
           }`}
         >
@@ -54,7 +56,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             id="nav-scan-action-btn"
             type="button"
             onClick={() => onSelectTab('scan')}
-            className="w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#1E5128] hover:bg-[#163e1e] active:scale-90 text-white flex items-center justify-center shadow-lg border-3 sm:border-4 border-white transition-all cursor-pointer flex-shrink-0"
+            className="w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#1E5128] hover:bg-[#163e1e] active:scale-90 text-white flex items-center justify-center shadow-lg border-3 sm:border-4 border-white transition-transform duration-150 cursor-pointer flex-shrink-0"
             aria-label="Scan Leaf Disease"
             title="Scan Leaf"
           >
@@ -67,7 +69,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           id="nav-nasa-btn"
           type="button"
           onClick={() => onSelectTab('nasa')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 min-h-[44px] transition-all active:scale-95 cursor-pointer ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 min-h-[44px] transition-all duration-150 active:scale-90 cursor-pointer ${
             currentTab === 'nasa' ? 'text-[#1E5128]' : 'text-gray-400 hover:text-gray-600'
           }`}
         >
@@ -82,11 +84,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           id="nav-profile-btn"
           type="button"
           onClick={() => onSelectTab('profile')}
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 min-h-[44px] transition-all active:scale-95 cursor-pointer ${
+          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 min-h-[44px] transition-all duration-150 active:scale-90 cursor-pointer ${
             currentTab === 'profile' ? 'text-[#1E5128]' : 'text-gray-400 hover:text-gray-600'
           }`}
         >
-          <User className={`w-5 h-5 ${currentTab === 'profile' ? 'stroke-[2.5]' : 'stroke-2'}`} />
+          {userPhotoUrl ? (
+            <div className={`w-5 h-5 rounded-full overflow-hidden border ${
+              currentTab === 'profile' ? 'border-[#1E5128] ring-1 ring-[#1E5128]' : 'border-gray-300'
+            }`}>
+              <img src={userPhotoUrl} alt="Profile" className="w-full h-full object-cover" />
+            </div>
+          ) : (
+            <User className={`w-5 h-5 ${currentTab === 'profile' ? 'stroke-[2.5]' : 'stroke-2'}`} />
+          )}
           <span className="text-[10px] font-bold mt-0.5 leading-none whitespace-nowrap">
             {isBn ? 'প্রোফাইল' : 'Profile'}
           </span>

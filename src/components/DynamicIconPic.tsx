@@ -18,7 +18,6 @@ interface DynamicIconPicProps {
 const KNOWN_SOURCES: Record<string, string[]> = {
   disease: [
     '/icons/disease.png',
-    '/public/src/disease.png',
     '/images/sample_disease.jpg',
     '/images/leaf_sample.jpg',
     '/icons/disease_scanner.svg',
@@ -33,17 +32,14 @@ const KNOWN_SOURCES: Record<string, string[]> = {
   ],
   market: [
     '/icons/market.png',
-    '/public/src/market.png',
     '/icons/market_price.svg',
   ],
   bot: [
     '/icons/bot.png',
-    '/public/src/bot.png',
     '/icons/ai_bot.svg',
   ],
   chat: [
     '/icons/bot.png',
-    '/public/src/bot.png',
     '/icons/ai_bot.svg',
   ],
   crops: [

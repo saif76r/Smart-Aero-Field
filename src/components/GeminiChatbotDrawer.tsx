@@ -20,7 +20,9 @@ import {
   Plus,
   BookOpen,
   Mic,
-  MicOff
+  MicOff,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { Language, ChatMessage } from '../types';
 import { QUICK_PROMPTS_EN, QUICK_PROMPTS_BN } from '../data/bangladeshAgriData';

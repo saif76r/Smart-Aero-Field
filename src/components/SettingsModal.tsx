@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Language } from '../types';
 import { BANGLADESH_DISTRICTS } from '../data/bangladeshAgriData';
+import { requestBrowserPushPermission } from '../utils/agronomicEngine';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -51,7 +52,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200 pt-safe pb-safe">
       <div 
         className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -200,8 +201,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <input 
                   type="checkbox"
                   checked={weatherAlerts}
-                  onChange={(e) => setWeatherAlerts(e.target.checked)}
-                  className="rounded text-[#1E5128] focus:ring-[#1E5128] w-4 h-4"
+                  onChange={async (e) => {
+                    const checked = e.target.checked;
+                    setWeatherAlerts(checked);
+                    if (checked) {
+                      await requestBrowserPushPermission();
+                    }
+                  }}
+                  className="rounded text-[#1E5128] focus:ring-[#1E5128] w-4 h-4 cursor-pointer"
                 />
               </label>
 

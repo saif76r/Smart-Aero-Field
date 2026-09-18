@@ -16,7 +16,7 @@ import {
   Loader2,
   UserCheck
 } from 'lucide-react';
-import { Language } from '../types';
+import { Language, FarmerUser } from '../types';
 import { BANGLADESH_DISTRICTS } from '../data/bangladeshAgriData';
 import { 
   verifyFarmerLogin, 
@@ -28,7 +28,7 @@ interface LoginScreenProps {
   language: Language;
   onToggleLanguage?: () => void;
   onBackToLanguageSelect?: () => void;
-  onLoginSuccess: (user: { name: string; phone: string; district: string; landSize: string }) => void;
+  onLoginSuccess: (user: FarmerUser) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({

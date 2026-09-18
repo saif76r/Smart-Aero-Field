@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Sparkles, 
   Satellite, 
@@ -12,11 +12,18 @@ import {
   Bot,
   CloudRain,
   Droplets,
-  Wind
+  Wind,
+  User,
+  RefreshCw
 } from 'lucide-react';
-import { Language, NotificationItem } from './types';
+import { Language, NotificationItem, FarmerUser } from './types';
 import { INITIAL_NOTIFICATIONS } from './data/bangladeshAgriData';
 import { getDistrictWeather, getLiveDateDisplay } from './data/weatherData';
+import { 
+  getRealtimeAgronomicUpdates, 
+  generateDailyWeatherNotifications, 
+  triggerNativePushNotification 
+} from './utils/agronomicEngine';
 import { Navbar } from './components/Navbar';
 import { BottomNav } from './components/BottomNav';
 import { LeafDiseaseScanner } from './components/LeafDiseaseScanner';
@@ -36,14 +43,7 @@ import { WelcomeScreen } from './components/WelcomeScreen';
 import { DynamicIconPic } from './components/DynamicIconPic';
 import { testConnection, ensureAuthenticatedUser, auth } from './lib/firebase';
 import { signOut } from 'firebase/auth';
-import { saveFarmerProfileToFirestore } from './lib/firestoreService';
-
-interface FarmerUser {
-  name: string;
-  phone: string;
-  district: string;
-  landSize: string;
-}
+import { saveFarmerProfileToFirestore, fetchFarmerProfileFromFirestore } from './lib/firestoreService';
 
 export function App() {
   // App Global State
@@ -114,16 +114,91 @@ export function App() {
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [chatTopic, setChatTopic] = useState<string | null>(null);
 
-  // Notifications State
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  // Notifications State with local storage persistence and daily weather updates
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('krishi_notifications_list');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed reading notifications from storage', e);
+    }
+    return INITIAL_NOTIFICATIONS;
+  });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
   const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
 
   const handleMarkAllNotificationsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setNotifications((prev) => {
+      const updated = prev.map((n) => ({ ...n, read: true }));
+      try {
+        localStorage.setItem('krishi_notifications_list', JSON.stringify(updated));
+      } catch (e) {
+        console.warn(e);
+      }
+      return updated;
+    });
   };
+
+  // Sync real-time daily notifications based on weather
+  const syncWeatherNotifications = useCallback((forceRefresh: boolean = false) => {
+    const district = currentUser?.district || 'Rajshahi';
+    const todayDate = new Date();
+    const todayKey = todayDate.toISOString().split('T')[0];
+    const lastSyncDate = localStorage.getItem('krishi_last_weather_notify_date');
+    const lastSyncDistrict = localStorage.getItem('krishi_last_weather_district');
+
+    if (forceRefresh || lastSyncDate !== todayKey || lastSyncDistrict !== district) {
+      const dailyAlerts = generateDailyWeatherNotifications(district, todayDate);
+      
+      setNotifications((prev) => {
+        const filtered = prev.filter(
+          (item) => 
+            !item.id.startsWith(`daily-weather-${todayKey}`) && 
+            !item.id.startsWith(`daily-irrigation-${todayKey}`) && 
+            !item.id.startsWith(`daily-disease-alert-${todayKey}`) && 
+            !item.id.startsWith(`daily-agronomy-${todayKey}`)
+        );
+        const updated = [...dailyAlerts, ...filtered].slice(0, 30);
+        try {
+          localStorage.setItem('krishi_notifications_list', JSON.stringify(updated));
+          localStorage.setItem('krishi_last_weather_notify_date', todayKey);
+          localStorage.setItem('krishi_last_weather_district', district);
+        } catch (e) {
+          console.warn('Failed saving notifications', e);
+        }
+        return updated;
+      });
+
+      if (dailyAlerts.length > 0) {
+        const top = dailyAlerts[0];
+        triggerNativePushNotification(
+          isBn ? 'স্মার্ট অ্যারো ফিল্ড - আজকের আবহাওয়া সতর্কতা' : 'Smart Aero Field - Today Weather Advisory',
+          isBn ? top.titleBn : top.titleEn
+        );
+      }
+    }
+  }, [currentUser?.district, isBn]);
+
+  useEffect(() => {
+    syncWeatherNotifications(false);
+  }, [syncWeatherNotifications]);
+
+  // Dynamic Real-time Agronomic Updates for TODAY based on live date, weather & crop
+  const [agronomicRefreshCount, setAgronomicRefreshCount] = useState<number>(0);
+  const agronomicUpdates = useMemo(() => {
+    return getRealtimeAgronomicUpdates(
+      currentUser?.district || 'Rajshahi',
+      currentUser?.primaryCrop,
+      new Date()
+    );
+  }, [currentUser?.district, currentUser?.primaryCrop, agronomicRefreshCount]);
 
   const openChatWithTopic = (topic: string) => {
     setChatTopic(topic);
@@ -143,6 +218,30 @@ export function App() {
     }
     setCurrentUser(user);
     setCurrentTab('home');
+  };
+
+  const handleUpdateUserProfile = async (updated: FarmerUser) => {
+    try {
+      localStorage.setItem('krishi_farmer_user', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('LocalStorage error', e);
+    }
+    setCurrentUser(updated);
+
+    try {
+      await saveFarmerProfileToFirestore({
+        name: updated.name,
+        phone: updated.phone,
+        district: updated.district,
+        farmSizeAcres: parseFloat(updated.landSize) || 0,
+        photoUrl: updated.photoUrl,
+        bio: updated.bio,
+        experienceYears: updated.experienceYears ? parseInt(updated.experienceYears, 10) : undefined,
+        primaryCrops: updated.primaryCrops,
+      });
+    } catch (e) {
+      console.warn('Firestore profile save note:', e);
+    }
   };
 
   const handleLogout = () => {
@@ -173,7 +272,21 @@ export function App() {
           phone: currentUser.phone,
           district: currentUser.district,
           farmSizeAcres: parseFloat(currentUser.landSize) || 0,
+          photoUrl: currentUser.photoUrl,
+          bio: currentUser.bio,
+          primaryCrops: currentUser.primaryCrops,
+          experienceYears: currentUser.experienceYears ? parseInt(currentUser.experienceYears, 10) : undefined,
         }).catch((e) => console.warn('Firestore profile sync note:', e));
+
+        fetchFarmerProfileFromFirestore().then((prof) => {
+          if (prof && prof.photoUrl && !currentUser.photoUrl && isMounted) {
+            const updated = { ...currentUser, photoUrl: prof.photoUrl };
+            try {
+              localStorage.setItem('krishi_farmer_user', JSON.stringify(updated));
+            } catch {}
+            setCurrentUser(updated);
+          }
+        }).catch((e) => console.warn('Profile fetch note:', e));
       }
     }).catch((e) => console.warn('Auth note:', e));
 
@@ -234,7 +347,7 @@ export function App() {
       />
 
       {/* Main Screen Container */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-3 sm:px-4 pt-3 sm:pt-4 pb-32 sm:pb-36 overflow-x-hidden">
+      <main className="flex-1 max-w-2xl w-full mx-auto px-3 sm:px-4 pt-3 sm:pt-4 pb-32 sm:pb-36">
         
         {/* VIEW: HOME (Matching Screenshot 4) */}
         {currentTab === 'home' && (
@@ -255,17 +368,25 @@ export function App() {
                   {/* Left Column: Greeting, Farmer Name, Crop Advice & Stats */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center space-x-2.5">
-                      {/* Brand Logo Avatar */}
-                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white shadow-md border-2 border-white/95 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        <img
-                          src="/logo.png"
-                          alt="Smart Aero Field Logo"
-                          className="w-full h-full object-cover rounded-full"
-                          onError={(e) => {
-                            (e.target as HTMLElement).style.display = 'none';
-                          }}
-                        />
-                      </div>
+                      {/* User Uploaded Profile Picture Avatar (Replaces logo with user picture) */}
+                      <button
+                        type="button"
+                        onClick={() => setCurrentTab('profile')}
+                        title={isBn ? 'প্রোফাইল দেখতে বা ছবি পরিবর্তন করতে ক্লিক করুন' : 'Click to view profile or change photo'}
+                        className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white shadow-md border-2 border-[#D8E9A8] flex items-center justify-center flex-shrink-0 overflow-hidden hover:ring-2 hover:ring-white transition-all cursor-pointer group active:scale-95"
+                      >
+                        {currentUser.photoUrl ? (
+                          <img
+                            src={currentUser.photoUrl}
+                            alt={currentUser.name}
+                            className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-[#1E5128]/15 flex items-center justify-center text-[#1E5128]">
+                            <User className="w-6 h-6 text-[#1E5128]" />
+                          </div>
+                        )}
+                      </button>
                       <div className="min-w-0">
                         <div className="flex items-center space-x-1.5">
                           <span className="text-xs font-bold text-[#D8E9A8] uppercase tracking-wider block">
@@ -439,7 +560,7 @@ export function App() {
                     {isBn ? 'পাতা ও ফলের রোগ' : 'Leaf & Fruit Disease'}
                   </span>
                   <span className="text-[10px] text-gray-500 block text-center mt-0.5">
-                    {isBn ? 'ডুয়াল এআই স্ক্যান' : 'Dual AI Scanner'}
+                    {isBn ? 'স্মার্ট এআই স্ক্যান' : 'Smart AI Scanner'}
                   </span>
                 </button>
 
@@ -574,46 +695,102 @@ export function App() {
               </button>
             </div>
 
-            {/* Recent Agricultural Updates (Screenshot 4) */}
-            <div className="space-y-2.5">
-              <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                {isBn ? 'সাম্প্রতিক কৃষি সময়সূচি ও আপডেট' : 'Recent Agronomic Updates'}
+            {/* Recent Agricultural Updates (Clean & Photo-Rich Daily Real-Time Schedule) */}
+            <div className="space-y-3">
+              {/* Clean unified header */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="font-black text-sm sm:text-base text-gray-900 tracking-tight">
+                      {isBn ? 'দৈনিক কৃষি সময়সূচি ও পরামর্শ' : 'Daily Agronomic Schedule'}
+                    </h3>
+                    <span className="inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                      <span>{isBn ? 'লাইভ' : 'Live'}</span>
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    📅 {liveDate.fullDateFormatted} • {currentUser.district} {isBn ? 'এর ফসল পর্যায়' : 'Crop Phase'}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setAgronomicRefreshCount((c) => c + 1)}
+                  title={isBn ? 'আজকের তথ্য রিফ্রেশ করুন' : 'Refresh today recommendations'}
+                  className="flex items-center space-x-1 text-[11px] font-semibold text-gray-600 hover:text-[#1E5128] hover:bg-emerald-50 transition-all px-2.5 py-1.5 rounded-xl border border-gray-200 cursor-pointer active:scale-95 shadow-2xs bg-white"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-emerald-700" />
+                  <span className="hidden sm:inline">{isBn ? 'রিফ্রেশ' : 'Sync'}</span>
+                </button>
               </div>
 
+              {/* Clean Photo Cards List */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Update 1 */}
-                <div 
-                  onClick={() => handleNavigateToCrop('rice')}
-                  className="bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs hover:border-[#1E5128]/50 transition-colors cursor-pointer"
-                >
-                  <span className="text-[10px] font-bold bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
-                    {isBn ? 'আমন ধান' : 'Aman Rice'}
-                  </span>
-                  <h4 className="font-bold text-sm text-gray-900 mt-2">
-                    {isBn ? 'আমন ধানে সার প্রয়োগের উপযুক্ত সময়' : 'Best Time For Fertilizer Application'}
-                  </h4>
-                  <div className="flex items-center space-x-1 text-xs text-emerald-700 font-semibold mt-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>28 May – 28 June / 15 July – 15 August</span>
-                  </div>
-                </div>
+                {agronomicUpdates.map((item) => (
+                  <div 
+                    key={item.id}
+                    onClick={() => {
+                      if (item.cropId) {
+                        handleNavigateToCrop(item.cropId);
+                      } else {
+                        openChatWithTopic(isBn ? item.titleBn : item.titleEn);
+                      }
+                    }}
+                    className="bg-white p-3 rounded-2xl border border-gray-200/90 shadow-2xs hover:shadow-md hover:border-emerald-600/50 transition-all cursor-pointer flex gap-3 items-center group relative overflow-hidden"
+                  >
+                    {/* Crop Picture Thumbnail */}
+                    <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100 shadow-2xs">
+                      <img 
+                        src={item.image || '/images/crop_rice.jpg'} 
+                        alt={item.cropTagEn} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                        loading="lazy"
+                      />
+                      {item.isTodayActive && (
+                        <span className="absolute bottom-1 left-1 right-1 text-[9px] font-bold bg-[#1E5128]/95 backdrop-blur-xs text-white text-center rounded py-0.5 shadow-xs">
+                          {isBn ? 'সক্রিয়' : 'Active'}
+                        </span>
+                      )}
+                    </div>
 
-                {/* Update 2 */}
-                <div 
-                  onClick={() => handleNavigateToCrop('wheat')}
-                  className="bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs hover:border-[#1E5128]/50 transition-colors cursor-pointer"
-                >
-                  <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                    {isBn ? 'রবি ফসল' : 'Rabi Crops'}
-                  </span>
-                  <h4 className="font-bold text-sm text-gray-900 mt-2">
-                    {isBn ? 'টমেটো ও আলু চাষের সেরা সময়' : 'Best Time For Tomato & Potato Sowing'}
-                  </h4>
-                  <div className="flex items-center space-x-1 text-xs text-amber-800 font-semibold mt-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>15 September – 15 November</span>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                          item.tagColor === 'amber' ? 'bg-amber-100/80 text-amber-900' :
+                          item.tagColor === 'blue' ? 'bg-blue-100/80 text-blue-900' :
+                          item.tagColor === 'purple' ? 'bg-purple-100/80 text-purple-900' :
+                          item.tagColor === 'emerald' ? 'bg-emerald-100/80 text-emerald-900' :
+                          'bg-green-100/80 text-green-900'
+                        }`}>
+                          {isBn ? item.cropTagBn : item.cropTagEn}
+                        </span>
+
+                        <span className="text-[10px] font-medium text-emerald-800 flex items-center space-x-0.5">
+                          <Calendar className="w-3 h-3 text-emerald-700 mr-0.5" />
+                          <span>{isBn ? item.dateRangeBn : item.dateRangeEn}</span>
+                        </span>
+                      </div>
+
+                      <h4 className="font-extrabold text-xs sm:text-sm text-gray-900 leading-snug truncate group-hover:text-[#1E5128] transition-colors">
+                        {isBn ? item.titleBn : item.titleEn}
+                      </h4>
+
+                      <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                        {isBn ? item.stageBn : item.stageEn}
+                      </p>
+
+                      {/* Compact Weather Advisory Pill */}
+                      <div className="mt-1.5 flex items-center justify-between text-[10px] bg-emerald-50/70 border border-emerald-100/80 text-emerald-900 px-2 py-1 rounded-lg">
+                        <span className="truncate font-medium">
+                          {isBn ? item.weatherBriefBn : item.weatherBriefEn}
+                        </span>
+                        <ChevronRight className="w-3.5 h-3.5 text-emerald-700 ml-1.5 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -709,14 +886,16 @@ export function App() {
           />
         )}
 
-        {/* VIEW: DEDICATED FARMER PROFILE (Screenshot 19) */}
+        {/* VIEW: DEDICATED FARMER PROFILE */}
         {currentTab === 'profile' && (
           <FarmerProfileView
             language={language}
             user={currentUser}
+            onUpdateUser={handleUpdateUserProfile}
             onOpenChatWithTopic={openChatWithTopic}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onLogout={handleLogout}
+            onNavigateToTab={(tab: string) => setCurrentTab(tab)}
           />
         )}
       </main>
@@ -762,7 +941,9 @@ export function App() {
         onClose={() => setIsNotificationsOpen(false)}
         language={language}
         notifications={notifications}
+        currentDistrict={currentUser.district}
         onMarkAllAsRead={handleMarkAllNotificationsRead}
+        onRefreshDailyWeatherAlerts={() => syncWeatherNotifications(true)}
         onOpenChatWithTopic={openChatWithTopic}
       />
 
@@ -788,6 +969,7 @@ export function App() {
           setCurrentTab(tab);
         }}
         language={language}
+        userPhotoUrl={currentUser.photoUrl}
       />
     </div>
   );

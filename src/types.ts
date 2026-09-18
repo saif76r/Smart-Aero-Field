@@ -50,6 +50,11 @@ export interface DiseaseDiagnostic {
     chemical: string[];
     prevention: string[];
   };
+  solutionsBn?: {
+    organic: string[];
+    chemical: string[];
+    prevention: string[];
+  };
 }
 
 export interface ChatMessage {
@@ -160,6 +165,8 @@ export interface FarmerProfile {
   soilType?: string;
   primaryCrops?: string[];
   experienceYears?: number;
+  photoUrl?: string;
+  bio?: string;
   updatedAt?: string;
 }
 
@@ -170,7 +177,20 @@ export interface RegisteredFarmer {
   district: string;
   landSize: string;
   crop?: string;
+  photoUrl?: string;
+  bio?: string;
   authUid?: string;
   registeredAt: string;
+}
+
+export interface FarmerUser {
+  name: string;
+  phone: string;
+  district: string;
+  landSize: string;
+  photoUrl?: string;
+  bio?: string;
+  experienceYears?: string;
+  primaryCrops?: string[];
 }
 

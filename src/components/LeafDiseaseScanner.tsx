@@ -15,6 +15,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Language, DiseaseDiagnostic } from '../types';
+import { translateSolutionToBengali } from '../data/solutionTranslations';
 
 interface LeafDiseaseScannerProps {
   language: Language;
@@ -408,9 +409,6 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
                             style={{ width: `${scanProgress}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-gray-300 font-normal">
-                          Hugging Face + Gemini Dual AI ({scanProgress}%)
-                        </span>
                       </div>
                     </div>
                   </div>
@@ -564,46 +562,46 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
               </div>
 
               {/* Segmented Pill Tabs */}
-              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mb-3">
+              <div className="grid grid-cols-3 gap-1 sm:gap-2 mb-3">
                 <button
                   type="button"
                   onClick={() => setActiveSolutionTab('chemical')}
-                  className={`text-[11px] sm:text-xs py-2 px-1 sm:px-3 rounded-lg font-bold transition-all flex items-center justify-center text-center leading-tight ${
+                  className={`text-[11px] sm:text-xs py-2 px-1 sm:px-2 rounded-lg font-bold transition-all flex items-center justify-center text-center whitespace-nowrap ${
                     activeSolutionTab === 'chemical'
                       ? 'bg-[#4E9F3D] text-white shadow-sm'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   <FlaskConical className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                  <span className="truncate">{isBn ? 'রাসায়নিক' : 'Chemical'}</span>
+                  <span>{isBn ? 'রাসায়নিক' : 'Chemical'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveSolutionTab('organic')}
-                  className={`text-[11px] sm:text-xs py-2 px-1 sm:px-3 rounded-lg font-bold transition-all flex items-center justify-center text-center leading-tight ${
+                  className={`text-[11px] sm:text-xs py-2 px-1 sm:px-2 rounded-lg font-bold transition-all flex items-center justify-center text-center whitespace-nowrap ${
                     activeSolutionTab === 'organic'
                       ? 'bg-[#4E9F3D] text-white shadow-sm'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   <Leaf className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                  <span className="truncate">{isBn ? 'জৈব প্রতিকার' : 'Organic'}</span>
+                  <span>{isBn ? 'জৈব প্রতিকার' : 'Organic'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveSolutionTab('prevention')}
-                  className={`text-[11px] sm:text-xs py-2 px-1 sm:px-3 rounded-lg font-bold transition-all flex items-center justify-center text-center leading-tight ${
+                  className={`text-[11px] sm:text-xs py-2 px-1 sm:px-2 rounded-lg font-bold transition-all flex items-center justify-center text-center whitespace-nowrap ${
                     activeSolutionTab === 'prevention'
                       ? 'bg-[#4E9F3D] text-white shadow-sm'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   <ShieldCheck className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                  <span className="truncate">{isBn ? 'প্রতিরোধ' : 'Prevention'}</span>
+                  <span>{isBn ? 'প্রতিরোধ' : 'Prevention'}</span>
                 </button>
               </div>
 
-              {/* Tab Content Box (Green tinted light container like screenshot 9) */}
+              {/* Tab Content Box */}
               <div className="bg-[#E7F8ED] border border-[#BDE8CB] rounded-xl p-3.5 text-gray-900">
                 {activeSolutionTab === 'chemical' && (
                   <div className="space-y-2">
@@ -611,12 +609,17 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
                       <span>{isBn ? 'অনুমোদিত রাসায়নিক বালাইনাশক ও সঠিক মাত্রা:' : 'Approved Chemical Fungicides & Accurate Dosages:'}</span>
                     </div>
                     <ul className="space-y-1.5 text-xs sm:text-sm text-emerald-900">
-                      {diagnostic.solutions.chemical.map((sol, i) => (
-                        <li key={i} className="flex items-start space-x-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                          <span>{sol}</span>
-                        </li>
-                      ))}
+                      {(() => {
+                        const items = isBn
+                          ? (diagnostic.solutionsBn?.chemical?.length ? diagnostic.solutionsBn.chemical : diagnostic.solutions.chemical.map(translateSolutionToBengali))
+                          : diagnostic.solutions.chemical;
+                        return items.map((sol, i) => (
+                          <li key={i} className="flex items-start space-x-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                            <span>{sol}</span>
+                          </li>
+                        ));
+                      })()}
                     </ul>
                   </div>
                 )}
@@ -627,12 +630,17 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
                       {isBn ? 'পরিবেশবান্ধব জৈব প্রতিকার:' : 'Eco-friendly Organic Remedies:'}
                     </div>
                     <ul className="space-y-1.5 text-xs sm:text-sm text-emerald-900">
-                      {diagnostic.solutions.organic.map((sol, i) => (
-                        <li key={i} className="flex items-start space-x-2">
-                          <Leaf className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                          <span>{sol}</span>
-                        </li>
-                      ))}
+                      {(() => {
+                        const items = isBn
+                          ? (diagnostic.solutionsBn?.organic?.length ? diagnostic.solutionsBn.organic : diagnostic.solutions.organic.map(translateSolutionToBengali))
+                          : diagnostic.solutions.organic;
+                        return items.map((sol, i) => (
+                          <li key={i} className="flex items-start space-x-2">
+                            <Leaf className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                            <span>{sol}</span>
+                          </li>
+                        ));
+                      })()}
                     </ul>
                   </div>
                 )}
@@ -643,12 +651,17 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
                       {isBn ? 'ভবিষ্যৎ প্রতিরোধের উপায়:' : 'Preventive Agronomy Protocol:'}
                     </div>
                     <ul className="space-y-1.5 text-xs sm:text-sm text-emerald-900">
-                      {diagnostic.solutions.prevention.map((sol, i) => (
-                        <li key={i} className="flex items-start space-x-2">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                          <span>{sol}</span>
-                        </li>
-                      ))}
+                      {(() => {
+                        const items = isBn
+                          ? (diagnostic.solutionsBn?.prevention?.length ? diagnostic.solutionsBn.prevention : diagnostic.solutions.prevention.map(translateSolutionToBengali))
+                          : diagnostic.solutions.prevention;
+                        return items.map((sol, i) => (
+                          <li key={i} className="flex items-start space-x-2">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                            <span>{sol}</span>
+                          </li>
+                        ));
+                      })()}
                     </ul>
                   </div>
                 )}
