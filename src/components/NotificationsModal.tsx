@@ -4,7 +4,7 @@ import {
   Bell, 
   CloudRain, 
   Droplet, 
-  Sparkles, 
+  Sprout, 
   AlertTriangle, 
   TrendingUp, 
   CheckCheck,
@@ -54,7 +54,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
       case 'irrigation':
         return <Droplet className="w-5 h-5 text-cyan-600" />;
       case 'fertilizer':
-        return <Sparkles className="w-5 h-5 text-amber-600" />;
+        return <Sprout className="w-5 h-5 text-emerald-600" />;
       case 'pest':
         return <AlertTriangle className="w-5 h-5 text-red-600" />;
       case 'market':

@@ -6,7 +6,6 @@ import {
   TrendingUp, 
   TrendingDown, 
   Minus,
-  Sparkles,
   ShoppingBag
 } from 'lucide-react';
 import { Language, MarketItem } from '../types';
@@ -171,7 +170,6 @@ export const MarketPriceView: React.FC<MarketPriceViewProps> = ({
         onClick={() => onOpenChatWithTopic?.(`What is the price forecast for Aman rice and potato in ${selectedDistrict}? When is the best time to sell?`)}
         className="w-full py-3 bg-[#1E5128] hover:bg-[#163e1e] text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 shadow"
       >
-        <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
         <span>{isBn ? 'বাজার পূর্বাভাস ও ফসল বিক্রির সেরা সময় জানুন' : 'Get Crop Selling Strategy & Price Forecast'}</span>
       </button>
     </div>

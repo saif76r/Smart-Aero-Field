@@ -4,7 +4,6 @@ import {
   Calculator, 
   Plus, 
   Trash2, 
-  Sparkles, 
   TrendingUp, 
   TrendingDown, 
   ReceiptText, 
@@ -1104,7 +1103,6 @@ ${cropSale.quantity ? `পরিমাণ: ${cropSale.quantity} ${cropSale.unit}
                 }}
                 className="w-full mt-2 py-2.5 bg-[#1E5128] hover:bg-[#163e1e] active:scale-[0.99] text-white rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs"
               >
-                <Sparkles className="w-4 h-4 text-emerald-200" />
                 <span>
                   {isBn 
                     ? 'খরচ কমাতে এআই কৃষিবিদের পরামর্শ নিন' 

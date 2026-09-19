@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, 
-  Sparkles, 
   CheckCircle2, 
   Droplets, 
   ChevronDown, 
@@ -381,7 +380,6 @@ export const SoilTestView: React.FC<SoilTestViewProps> = ({
                       }}
                       className="w-full py-2.5 bg-[#1E5128] hover:bg-[#163e1e] active:scale-[0.99] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow-sm"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-[#D8E9A8]" />
                       <span>{isBn ? 'এই মাটির জন্য এআই কৃষিবিদের পরামর্শ নিন' : 'Consult AI Agronomist for this Soil'}</span>
                     </button>
                   </div>

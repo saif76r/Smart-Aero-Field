@@ -32,11 +32,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-[#D8E9A8]/20 rounded-full blur-2xl pointer-events-none" />
 
           {/* Circular Logo */}
-          <div className="w-20 h-20 mx-auto rounded-full bg-white shadow-xl p-1 flex items-center justify-center mb-3 border-2 border-white/90 overflow-hidden">
+          <div className="w-20 h-20 mx-auto rounded-full bg-white shadow-xl flex items-center justify-center mb-3 border-2 border-white/90 overflow-hidden">
             <img 
               src="/logo.png" 
               alt="Smart Aero Field" 
-              className="w-full h-full object-cover rounded-full"
+              className="w-full h-full object-cover rounded-full scale-[1.24]"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}

@@ -4,7 +4,6 @@ import {
   Search, 
   Calendar, 
   Droplet, 
-  Sparkles, 
   AlertTriangle, 
   CheckCircle2, 
   ChevronRight,
@@ -228,7 +227,6 @@ export const CropInfoView: React.FC<CropInfoViewProps> = ({
               onClick={() => onOpenChatWithTopic?.(`Tell me how to protect my ${activeCrop.nameEn} crops from pests and diseases with exact organic and chemical solutions in Bangladesh.`)}
               className="w-full py-3 bg-[#1E5128] hover:bg-[#163e1e] active:scale-[0.99] text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 shadow-md cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-yellow-300" />
               <span>{isBn ? `${activeCrop.nameBn} সুরক্ষায় এআই কৃষিবিদের সাথে কথা বলুন` : `Ask AI Agronomist for ${activeCrop.nameEn} Protection`}</span>
             </button>
           </div>

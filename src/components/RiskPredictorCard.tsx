@@ -7,7 +7,6 @@ import {
   Thermometer, 
   Calendar, 
   MapPin, 
-  Sparkles, 
   Loader2, 
   Info,
   ChevronRight,
@@ -372,7 +371,6 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4 text-[#D8E9A8]" />
               <span>{isBn ? 'ঝুঁকি ও ফসল উপযুক্ততা আপডেট করুন' : 'Refresh Risk & Crop Analysis'}</span>
             </>
           )}
@@ -474,7 +472,6 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
                   onClick={() => onOpenChatWithTopic?.(`Give me cultivation and fertilizer tips for ${prediction.best_crop} in ${district}`)}
                   className="text-xs font-semibold text-gray-600 hover:text-gray-900 flex items-center space-x-1 bg-gray-100 hover:bg-gray-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                 >
-                  <Sparkles className="w-3 h-3 text-amber-500" />
                   <span>{isBn ? 'এআই পরামর্শ' : 'Ask AI'}</span>
                 </button>
               </div>

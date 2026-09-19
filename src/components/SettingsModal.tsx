@@ -8,7 +8,6 @@ import {
   Bell, 
   Smartphone, 
   CheckCircle2, 
-  Sparkles,
   Info
 } from 'lucide-react';
 import { Language } from '../types';
@@ -181,7 +180,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* SECTION 3: QUICK PREFERENCES */}
           <div className="space-y-2.5 pt-2 border-t border-gray-100">
             <label className="text-xs font-bold text-gray-800 flex items-center space-x-1.5 uppercase tracking-wide">
-              <Sparkles className="w-4 h-4 text-[#1E5128]" />
+              <Settings className="w-4 h-4 text-[#1E5128]" />
               <span>{isBn ? 'স্মার্ট নোটিফিকেশন ও ডেটা' : 'Preferences & Data Sync'}</span>
             </label>
 

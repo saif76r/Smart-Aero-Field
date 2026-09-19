@@ -4,7 +4,7 @@ import {
   Upload, 
   CheckCircle2, 
   AlertTriangle, 
-  Sparkles, 
+  Loader2, 
   RefreshCw, 
   ShieldCheck, 
   FlaskConical, 
@@ -400,7 +400,7 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
                     <div className="absolute inset-0 bg-cyan-500/10 backdrop-blur-[1px] flex items-center justify-center p-4">
                       <div className="bg-black/85 text-white px-4 py-3 rounded-xl text-xs font-bold flex flex-col items-center space-y-2 border border-cyan-400/50 shadow-2xl max-w-[280px] text-center">
                         <div className="flex items-center space-x-2">
-                          <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
+                          <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
                           <span>{scanStage}</span>
                         </div>
                         <div className="w-full bg-gray-700 h-1.5 rounded-full overflow-hidden">
@@ -416,12 +416,16 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
 
                 {!isScanning && diagnostic && (
                   <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-xl text-[11px] font-medium flex items-center justify-between">
-                    <div className="flex items-center space-x-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                      <span className="font-semibold">{diagnostic?.diseaseNameBn || diagnostic?.diseaseName}</span>
+                    <div className="flex items-center space-x-1.5 min-w-0 mr-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                      <span className="font-semibold truncate">
+                        {isBn
+                          ? (diagnostic?.diseaseNameBn || diagnostic?.diseaseName)
+                          : (diagnostic?.diseaseName || diagnostic?.diseaseNameBn)}
+                      </span>
                     </div>
                     {diagnostic?.aiEngines?.ensembleConfidence && (
-                      <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40">
+                      <span className="text-[10px] font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-500/40 whitespace-nowrap flex-shrink-0">
                         {diagnostic.aiEngines.ensembleConfidence}% Confidence
                       </span>
                     )}
@@ -484,7 +488,9 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
                   {isBn 
                     ? (diagnostic.severity === 'None' ? 'ফসল নিরীক্ষা: ' : 'শনাক্তকৃত রোগ: ') 
                     : (diagnostic.severity === 'None' ? 'Health Status: ' : 'Diagnosed Issue: ')}
-                  {isBn ? diagnostic.diseaseNameBn : diagnostic.diseaseName}
+                  {isBn
+                    ? (diagnostic.diseaseNameBn || diagnostic.diseaseName)
+                    : (diagnostic.diseaseName || diagnostic.diseaseNameBn)}
                 </span>
               </div>
 
@@ -556,7 +562,6 @@ export const LeafDiseaseScanner: React.FC<LeafDiseaseScannerProps> = ({
                   onClick={() => onOpenChatWithTopic?.(`How to treat ${diagnostic.diseaseName} (${diagnostic.diseaseNameBn}) in my field? What exact fungicide dosage should I spray?`)}
                   className="text-xs font-semibold text-[#1E5128] hover:underline flex items-center space-x-1"
                 >
-                  <Sparkles className="w-3 h-3 text-amber-500" />
                   <span>{isBn ? 'কৃষিবিদের সাহায্য নিন' : 'Ask Agronomist'}</span>
                 </button>
               </div>

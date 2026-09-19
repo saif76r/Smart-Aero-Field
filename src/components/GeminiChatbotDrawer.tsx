@@ -4,7 +4,6 @@ import {
   Send, 
   Bot, 
   User, 
-  Sparkles, 
   Loader2, 
   MessageSquare, 
   RefreshCw,
@@ -20,9 +19,7 @@ import {
   Plus,
   BookOpen,
   Mic,
-  MicOff,
-  Volume2,
-  VolumeX
+  MicOff
 } from 'lucide-react';
 import { Language, ChatMessage } from '../types';
 import { QUICK_PROMPTS_EN, QUICK_PROMPTS_BN } from '../data/bangladeshAgriData';
@@ -60,10 +57,9 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
   const [hasClearedNotice, setHasClearedNotice] = useState<boolean>(false);
   const [deleteNotice, setDeleteNotice] = useState<string | null>(null);
 
-  // Voice Texting (Speech-to-Text) & TTS state for farmers
+  // Voice Texting (Speech-to-Text) state for farmers
   const [isListening, setIsListening] = useState<boolean>(false);
   const [voiceStatusText, setVoiceStatusText] = useState<string | null>(null);
-  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const speechRecognitionRef = useRef<any>(null);
 
   // History View & Loaded Conversation state
@@ -333,45 +329,10 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
     }
   };
 
-  // Text-to-Speech (read bot answer aloud for farmers)
-  const handleSpeakBotMessage = (msgId: string, text: string) => {
-    if (!('speechSynthesis' in window)) return;
-
-    if (speakingMsgId === msgId) {
-      window.speechSynthesis.cancel();
-      setSpeakingMsgId(null);
-      return;
-    }
-
-    window.speechSynthesis.cancel();
-    const cleanText = text.replace(/[*_#`]/g, '');
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = chatLanguage === 'bn' ? 'bn-BD' : 'en-US';
-    utterance.rate = 0.92; // Clear, farmer-friendly pace
-    utterance.onend = () => setSpeakingMsgId(null);
-    utterance.onerror = () => setSpeakingMsgId(null);
-
-    const voices = window.speechSynthesis.getVoices();
-    if (chatLanguage === 'bn') {
-      const bnVoice = voices.find((v) => v.lang.startsWith('bn'));
-      if (bnVoice) utterance.voice = bnVoice;
-    } else {
-      const enVoice = voices.find((v) => v.lang.startsWith('en'));
-      if (enVoice) utterance.voice = enVoice;
-    }
-
-    setSpeakingMsgId(msgId);
-    window.speechSynthesis.speak(utterance);
-  };
-
-  // Cleanup voice & TTS on unmount or drawer close
+  // Cleanup voice on unmount or drawer close
   useEffect(() => {
     if (!isOpen) {
       stopVoiceRecognition();
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-      setSpeakingMsgId(null);
     }
   }, [isOpen]);
 
@@ -887,26 +848,8 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
 
                     {/* Bot Voice Audio Read-out for farmers */}
                     {msg.sender === 'bot' && (
-                      <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-[10px]">
-                        <button
-                          type="button"
-                          onClick={() => handleSpeakBotMessage(msg.id, msg.text)}
-                          className="flex items-center space-x-1 text-emerald-800 hover:text-emerald-950 font-semibold cursor-pointer bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md transition-colors"
-                          title={chatLanguage === 'bn' ? 'পরামর্শটি মুখে শুনুন' : 'Listen to advice'}
-                        >
-                          {speakingMsgId === msg.id ? (
-                            <>
-                              <VolumeX className="w-3 h-3 text-rose-600 animate-pulse" />
-                              <span className="text-rose-600 font-bold">{chatLanguage === 'bn' ? 'থামান' : 'Stop'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Volume2 className="w-3 h-3 text-[#1E5128]" />
-                              <span>{chatLanguage === 'bn' ? 'মুখে শুনুন' : 'Listen'}</span>
-                            </>
-                          )}
-                        </button>
-                        <span className="text-gray-400">{msg.timestamp}</span>
+                      <div className="text-[9px] mt-1.5 text-right text-gray-400">
+                        <span>{msg.timestamp}</span>
                       </div>
                     )}
 
@@ -939,7 +882,6 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
             {/* Quick Prompt Pills */}
             <div className="px-3 pt-2 pb-1 bg-white border-t border-gray-200/80">
               <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-1 flex items-center">
-                <Sparkles className="w-3 h-3 mr-1 text-[#4E9F3D]" />
                 <span>{chatLanguage === 'bn' ? 'দ্রুত পরামর্শ প্রশ্ন' : 'Quick Prompt Suggestions'}</span>
               </div>
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">

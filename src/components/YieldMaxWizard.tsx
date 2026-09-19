@@ -3,7 +3,6 @@ import {
   ArrowLeft, 
   TrendingUp, 
   CheckCircle2, 
-  Sparkles, 
   Loader2, 
   Award, 
   DollarSign, 
@@ -288,7 +287,6 @@ export const YieldMaxWizard: React.FC<YieldMaxWizardProps> = ({
             onClick={handleRunAnalysis}
             className="w-full py-3.5 bg-[#1E5128] hover:bg-[#163e1e] text-white font-black rounded-xl shadow-lg transition-all flex items-center justify-center space-x-2 text-sm"
           >
-            <Sparkles className="w-4 h-4 text-yellow-300" />
             <span>{isBn ? 'ফলন বৃদ্ধি বিশ্লেষণ তৈরি করুন' : 'Generate Yield Max Strategy'}</span>
           </button>
         </div>
@@ -409,7 +407,6 @@ export const YieldMaxWizard: React.FC<YieldMaxWizardProps> = ({
               onClick={() => onOpenChatWithTopic?.(`Give me day-by-day task checklist to achieve 84+ score on my ${variety} rice field`)}
               className="flex-1 py-3 bg-[#1E5128] hover:bg-[#163e1e] text-white font-bold rounded-xl text-xs shadow transition-all flex items-center justify-center space-x-1"
             >
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
               <span>{isBn ? 'দৈনিক কাজের তালিকা নিন' : 'Get Daily Checklist'}</span>
             </button>
           </div>

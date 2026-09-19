@@ -8,7 +8,6 @@ import {
   TrendingUp, 
   Calculator, 
   Headphones, 
-  Sparkles,
   ChevronRight,
   Settings
 } from 'lucide-react';

@@ -10,7 +10,6 @@ import {
   Gauge, 
   Sun, 
   CloudSun, 
-  Sparkles,
   Layers,
   MapPin,
   CheckCircle2,
@@ -489,7 +488,6 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
               onClick={() => onOpenChatWithTopic?.('What organic manure and fertilizer doses should I add for Sandy Clay Loam soil in Bangladesh?')}
               className="w-full py-2.5 bg-[#1E5128] hover:bg-[#163e1e] text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 shadow-sm"
             >
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
               <span>{isBn ? 'মাটি অনুযায়ী সারের মাত্রা জানুন' : 'Get Soil Fertilizer Plan from AI'}</span>
             </button>
           </div>

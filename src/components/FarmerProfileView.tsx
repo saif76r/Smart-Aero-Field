@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   User, 
   MapPin, 
-  Sparkles, 
   Settings, 
   LogOut,
   Camera,
@@ -242,7 +241,7 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
         {/* 2. Seasonal Advisory Box */}
         <div className="p-3 bg-[#F8FAF9] rounded-xl border border-gray-200 flex items-start space-x-3">
           <div className="p-2 bg-[#1E5128] text-white rounded-lg flex-shrink-0 mt-0.5">
-            <Sparkles className="w-4 h-4 text-[#D8E9A8]" />
+            <Leaf className="w-4 h-4 text-[#D8E9A8]" />
           </div>
           <div>
             <h4 className="text-xs font-bold text-gray-900">
@@ -382,7 +381,6 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
         onClick={() => onOpenChatWithTopic?.(`Analyze my ${displayLand}-acre farm in ${displayDistrict} and suggest a seasonal crop plan for maximum net profit`)}
         className="w-full py-3 bg-[#1E5128] hover:bg-[#163e1e] active:scale-98 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-1.5 shadow cursor-pointer"
       >
-        <Sparkles className="w-4 h-4 text-[#D8E9A8]" />
         <span>{isBn ? 'আমার খামারের জন্য এআই পরামর্শ নিন' : 'Request Personalized Agronomy Plan'}</span>
       </button>
 

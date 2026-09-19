@@ -9,7 +9,6 @@ import {
   MapPin, 
   Sprout, 
   Calendar, 
-  Sparkles,
   AlertCircle
 } from 'lucide-react';
 import { Language, FarmerUser } from '../types';

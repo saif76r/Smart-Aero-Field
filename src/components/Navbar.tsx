@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Sparkles } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { Language } from '../types';
 
 interface NavbarProps {
@@ -25,11 +25,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between">
         {/* App Logo & Brand */}
         <div className="flex items-center space-x-2.5 sm:space-x-3">
-          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white p-0.5 shadow-md overflow-hidden flex items-center justify-center flex-shrink-0 border-2 border-[#D8E9A8]">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white shadow-md overflow-hidden flex items-center justify-center flex-shrink-0 border-2 border-[#D8E9A8]">
             <img
               src="/logo.png"
               alt="Smart Aero Field Logo"
-              className="w-full h-full object-cover rounded-full"
+              className="w-full h-full object-cover rounded-full scale-[1.24]"
               onError={(e) => {
                 // Fallback to text icon if image fails
                 (e.target as HTMLElement).style.display = 'none';
@@ -67,10 +67,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             id="navbar-ai-assistant-btn"
             onClick={onOpenChat}
-            className="hidden sm:flex items-center space-x-1 bg-[#4E9F3D] hover:bg-[#3d852f] text-white text-xs px-2.5 py-1.5 rounded-full shadow transition-all font-medium active:scale-95 cursor-pointer"
+            className="hidden sm:flex items-center space-x-1 bg-[#4E9F3D] hover:bg-[#3d852f] text-white text-xs px-3 py-1.5 rounded-full shadow transition-all font-medium active:scale-95 cursor-pointer"
             title="Ask AI Agronomist"
           >
-            <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
             <span>{isBn ? 'এআই কৃষিবিদ' : 'AI Agronomist'}</span>
           </button>
 

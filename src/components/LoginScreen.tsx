@@ -218,11 +218,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           )}
 
           {/* Large, Prominent Circular Smart Aero Field Logo */}
-          <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-white shadow-2xl p-1 flex items-center justify-center mb-3 border-3 border-white/95 overflow-hidden transition-transform hover:scale-105">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full bg-white shadow-2xl flex items-center justify-center mb-3 border-3 border-white/95 overflow-hidden transition-transform hover:scale-105">
             <img 
               src="/logo.png" 
               alt="Smart Aero Field" 
-              className="w-full h-full object-cover rounded-full"
+              className="w-full h-full object-cover rounded-full scale-[1.24]"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
