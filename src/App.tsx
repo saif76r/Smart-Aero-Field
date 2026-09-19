@@ -490,42 +490,61 @@ export function App() {
               </div>
             </div>
 
-            {/* NASA Earth Data Banner Card (Screenshot 4) */}
+            {/* NASA Earth Data Banner Card with Satellite Earth Picture Background */}
             <div
               id="nasa-earth-data-banner"
               onClick={() => setCurrentTab('nasa')}
-              className="bg-white rounded-2xl p-3.5 sm:p-4 border border-blue-200/90 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-between group bg-gradient-to-r from-blue-50/70 via-white to-emerald-50/50 gap-2"
+              className="relative rounded-2xl p-3.5 sm:p-4 border border-blue-900/30 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer flex items-center justify-between group overflow-hidden text-white"
             >
-              <div className="flex items-center space-x-3 sm:space-x-3.5 min-w-0">
-                <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white flex items-center justify-center flex-shrink-0 shadow-sm border border-blue-200 group-hover:scale-105 transition-transform overflow-hidden">
-                  <img
-                    src="/images/nasa_logo.svg"
-                    alt="NASA Meatball Insignia Logo"
-                    className="w-full h-full object-cover scale-[1.04]"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center space-x-1.5 flex-wrap gap-1">
-                    <h3 className="font-extrabold text-sm sm:text-base text-gray-900 group-hover:text-blue-700 transition-colors truncate">
-                      NASA Earth Data
-                    </h3>
-                    <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded flex-shrink-0">
-                      Live MODIS
-                    </span>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded flex-shrink-0">
-                      {isBn ? 'ঝুঁকি ও ফসল পূর্বাভাস' : 'Risk & Crops'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">
-                    {isBn
-                      ? `${currentUser.district} জেলার স্যাটেলাইট ক্লাইমেট, ঝুঁকি ও ফসল উপযুক্ততা যাচাই`
-                      : `Satellite climatology, risk analysis & crop suitability for ${currentUser.district}`}
-                  </p>
-                </div>
+              {/* Background Satellite Earth Image with Precision Overlay */}
+              <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+                <img
+                  src="/images/satellite_earth.jpg"
+                  alt="NASA Satellite Earth Imagery"
+                  className="w-full h-full object-cover object-center scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
+                />
+                {/* Multi-layer Dark Gradient: Keeps text 100% crystal clear & readable */}
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-900/88 to-blue-950/75" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-cyan-500/10" />
               </div>
 
-              <div className="w-8 h-8 rounded-full bg-blue-50 group-hover:bg-blue-100 text-blue-700 flex items-center justify-center transition-colors flex-shrink-0">
-                <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+              {/* Foreground Card Content */}
+              <div className="relative z-10 flex items-center justify-between w-full gap-2.5">
+                <div className="flex items-center space-x-3 sm:space-x-3.5 min-w-0">
+                  {/* NASA Insignia with subtle glow and border */}
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/95 p-0.5 flex items-center justify-center flex-shrink-0 shadow-lg border-2 border-cyan-400/50 group-hover:border-cyan-300 group-hover:scale-105 transition-all overflow-hidden ring-2 ring-blue-500/20">
+                    <img
+                      src="/images/nasa_logo.svg"
+                      alt="NASA Meatball Insignia Logo"
+                      className="w-full h-full object-cover scale-[1.04]"
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center space-x-1.5 flex-wrap gap-1">
+                      <h3 className="font-black text-sm sm:text-base text-white group-hover:text-cyan-200 transition-colors tracking-tight truncate">
+                        NASA Earth Data
+                      </h3>
+                      <span className="inline-flex items-center gap-1 text-[10px] bg-blue-500/30 border border-blue-400/40 text-cyan-200 font-bold px-2 py-0.5 rounded-full flex-shrink-0 backdrop-blur-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                        Live MODIS
+                      </span>
+                      <span className="text-[10px] bg-emerald-500/25 border border-emerald-400/40 text-emerald-200 font-bold px-2 py-0.5 rounded-full flex-shrink-0 backdrop-blur-xs">
+                        {isBn ? 'ঝুঁকি ও ফসল পূর্বাভাস' : 'Risk & Crops'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 group-hover:text-slate-100 transition-colors mt-0.5 truncate font-normal">
+                      {isBn
+                        ? `${currentUser.district} জেলার স্যাটেলাইট ক্লাইমেট, ঝুঁকি ও ফসল উপযুক্ততা যাচাই`
+                        : `Satellite climatology, risk analysis & crop suitability for ${currentUser.district}`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right Arrow Button */}
+                <div className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white flex items-center justify-center transition-all flex-shrink-0 group-hover:bg-cyan-500 group-hover:text-slate-950 group-hover:border-cyan-400 shadow-md">
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
               </div>
             </div>
 

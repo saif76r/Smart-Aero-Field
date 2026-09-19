@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  Bell, 
-  CloudRain, 
-  Droplet, 
-  Sprout, 
-  AlertTriangle, 
-  TrendingUp, 
   CheckCheck,
   RefreshCw,
   Send
@@ -47,20 +41,38 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     setPushStatus(granted ? 'granted' : 'denied');
   };
 
-  const getIcon = (category: string) => {
+  const getNotificationPic = (category: string) => {
     switch (category) {
       case 'weather':
-        return <CloudRain className="w-5 h-5 text-blue-600" />;
+        return {
+          src: '/images/weather/rain.jpg',
+          alt: 'Weather Alert',
+        };
       case 'irrigation':
-        return <Droplet className="w-5 h-5 text-cyan-600" />;
+        return {
+          src: '/images/aerial_field.jpg',
+          alt: 'Irrigation & Water Guidance',
+        };
       case 'fertilizer':
-        return <Sprout className="w-5 h-5 text-emerald-600" />;
+        return {
+          src: '/images/soil_sample.jpg',
+          alt: 'Fertilizer & Soil Nutrition',
+        };
       case 'pest':
-        return <AlertTriangle className="w-5 h-5 text-red-600" />;
+        return {
+          src: '/images/sample_disease.jpg',
+          alt: 'Pest & Disease Risk',
+        };
       case 'market':
-        return <TrendingUp className="w-5 h-5 text-purple-600" />;
+        return {
+          src: '/icons/market.png',
+          alt: 'Market Wholesale Price',
+        };
       default:
-        return <Bell className="w-5 h-5 text-green-600" />;
+        return {
+          src: '/images/crop_rice.jpg',
+          alt: 'Farming Alert',
+        };
     }
   };
 
@@ -70,8 +82,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         
         {/* Header */}
         <div className="bg-[#1E5128] text-white p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Bell className="w-5 h-5 text-[#D8E9A8]" />
+          <div className="flex items-center space-x-2.5">
+            <div className="w-7 h-7 rounded-full overflow-hidden border border-[#D8E9A8]/60 shadow-xs flex-shrink-0 bg-white">
+              <img
+                src="/logo.png"
+                alt="Smart Aero Field"
+                className="w-full h-full object-cover"
+              />
+            </div>
             <h3 className="font-black text-base">
               {isBn ? 'দৈনিক আবহাওয়া ও কৃষি বিজ্ঞপ্তি' : 'Daily Weather & Farming Alerts'}
             </h3>
@@ -89,8 +107,12 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         {/* Live Weather Status Bar for Today */}
         <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-b border-emerald-100/80 p-3 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white shadow-xs border border-emerald-200 flex items-center justify-center flex-shrink-0">
-              <CloudRain className="w-4 h-4 text-[#1E5128]" />
+            <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs border border-emerald-300/90 flex items-center justify-center flex-shrink-0 bg-white">
+              <img
+                src={weather.rainChance > 30 ? '/images/weather/rain.jpg' : '/images/weather/partly_cloudy.jpg'}
+                alt="Live Weather Condition"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div>
               <div className="flex items-center space-x-1.5">
@@ -164,9 +186,18 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                   : 'bg-emerald-50/70 border-emerald-300 text-gray-900 shadow-2xs ring-1 ring-emerald-200/50'
               }`}
             >
-              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                {getIcon(item.category)}
-              </div>
+              {(() => {
+                const pic = getNotificationPic(item.category);
+                return (
+                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden flex-shrink-0 shadow-xs border border-gray-200/90 bg-white relative">
+                    <img
+                      src={pic.src}
+                      alt={pic.alt}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                );
+              })()}
 
               <div className="flex-1">
                 <div className="flex items-center space-x-1.5 mb-1">

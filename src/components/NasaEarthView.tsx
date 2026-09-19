@@ -76,21 +76,33 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
   });
 
   return (
-    <div className="bg-[#F5F7F8] min-h-screen pb-24">
-      {/* Top Green Curved Header (Matching Screenshot 5) */}
-      <div className="bg-[#1E5128] text-white pt-3 sm:pt-4 pb-7 sm:pb-8 px-3.5 sm:px-4 rounded-b-[28px] sm:rounded-b-[32px] shadow-lg pt-safe">
-        <div className="max-w-md mx-auto">
+    <div className="space-y-4">
+      {/* Top Header Card - With Real Satellite Earth Picture Background */}
+      <div className="rounded-2xl sm:rounded-3xl text-white p-4 sm:p-5 shadow-lg relative overflow-hidden border border-blue-900/50">
+        {/* Real Satellite Earth Picture Background */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <img
+            src="/images/satellite_earth.jpg"
+            alt="NASA Satellite Earth Imagery"
+            className="w-full h-full object-cover object-center scale-100"
+          />
+          {/* Multi-layer gradient so the Earth picture is clearly visible and rich, with 100% crisp text */}
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/75 to-blue-950/70" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-cyan-500/15" />
+        </div>
+
+        <div className="relative z-10">
           {/* Back & Title */}
           <div className="flex items-center space-x-2.5 sm:space-x-3 mb-3.5 sm:mb-4">
             <button
               id="nasa-back-btn"
               type="button"
               onClick={onBack}
-              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 text-white transition-colors flex-shrink-0"
+              className="p-2 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/35 text-white transition-colors flex-shrink-0 cursor-pointer backdrop-blur-xs border border-white/20"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden border border-white/40">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 shadow-md flex items-center justify-center flex-shrink-0 overflow-hidden border-2 border-cyan-400/60 ring-2 ring-blue-500/20">
               <img
                 src="/images/nasa_logo.svg"
                 alt="NASA Logo"
@@ -98,27 +110,27 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
               />
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-black flex items-center gap-1.5 truncate">
+              <h1 className="text-lg sm:text-xl font-black flex items-center gap-1.5 truncate text-white">
                 <span>NASA Earth Data</span>
-                <span className="text-[10px] bg-white/20 text-[#D8E9A8] px-1.5 py-0.5 rounded-full font-bold uppercase flex-shrink-0">
+                <span className="text-[10px] bg-blue-500/30 border border-blue-400/40 text-cyan-200 px-2 py-0.5 rounded-full font-bold uppercase flex-shrink-0 backdrop-blur-xs">
                   POWER API
                 </span>
               </h1>
-              <p className="text-xs text-green-200 truncate">
+              <p className="text-xs text-slate-200 truncate">
                 {isBn ? 'স্যাটেলাইটের মাধ্যমে আপনার জমির তথ্য' : 'Your land information from satellite telemetry'}
               </p>
             </div>
           </div>
 
           {/* Segmented Filter Control: Clean 4-Column Grid, No Overflow */}
-          <div className="bg-white/15 p-1 rounded-2xl grid grid-cols-4 gap-1 backdrop-blur-sm border border-white/20">
+          <div className="bg-black/40 p-1 rounded-2xl grid grid-cols-4 gap-1 backdrop-blur-md border border-white/20 shadow-inner">
             <button
               type="button"
               onClick={() => setActiveTab('risk')}
               className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center truncate cursor-pointer ${
                 activeTab === 'risk'
-                  ? 'bg-white text-[#1E5128] shadow-md'
-                  : 'text-white/80 hover:text-white'
+                  ? 'bg-white text-slate-950 shadow-md font-extrabold'
+                  : 'text-slate-200 hover:text-white hover:bg-white/10'
               }`}
             >
               <span className="sm:hidden">{isBn ? 'ঝুঁকি' : 'Risk'}</span>
@@ -129,8 +141,8 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
               onClick={() => setActiveTab('land')}
               className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center truncate cursor-pointer ${
                 activeTab === 'land'
-                  ? 'bg-white text-[#1E5128] shadow-md'
-                  : 'text-white/80 hover:text-white'
+                  ? 'bg-white text-slate-950 shadow-md font-extrabold'
+                  : 'text-slate-200 hover:text-white hover:bg-white/10'
               }`}
             >
               <span className="sm:hidden">{isBn ? 'জমি' : 'Land'}</span>
@@ -141,8 +153,8 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
               onClick={() => setActiveTab('weather')}
               className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center truncate cursor-pointer ${
                 activeTab === 'weather'
-                  ? 'bg-white text-[#1E5128] shadow-md'
-                  : 'text-white/80 hover:text-white'
+                  ? 'bg-white text-slate-950 shadow-md font-extrabold'
+                  : 'text-slate-200 hover:text-white hover:bg-white/10'
               }`}
             >
               {isBn ? 'আবহাওয়া' : 'Weather'}
@@ -152,8 +164,8 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
               onClick={() => setActiveTab('soil')}
               className={`py-2 px-1 text-[11px] sm:text-xs font-bold rounded-xl transition-all text-center truncate cursor-pointer ${
                 activeTab === 'soil'
-                  ? 'bg-white text-[#1E5128] shadow-md'
-                  : 'text-white/80 hover:text-white'
+                  ? 'bg-white text-slate-950 shadow-md font-extrabold'
+                  : 'text-slate-200 hover:text-white hover:bg-white/10'
               }`}
             >
               <span className="sm:hidden">{isBn ? 'মাটি' : 'Soil'}</span>
@@ -163,8 +175,8 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="max-w-md mx-auto px-4 -mt-3 space-y-4">
+      {/* Main Content Area - Clean Spacing Without Overlapping Header */}
+      <div className="mt-4 space-y-4">
         {/* Tab 0: Agriculture Risk & Crop Suitability Predictor */}
         {activeTab === 'risk' && (
           <div>

@@ -53,16 +53,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center space-x-1.5 sm:space-x-2">
-          {/* Cloud Firebase Status Pill */}
-          <div 
-            id="navbar-firebase-status"
-            className="flex items-center space-x-1 bg-black/20 text-white/90 text-[10px] sm:text-[11px] px-2 py-1 rounded-full border border-white/10"
-            title={isFirebaseConnected ? "Firebase Firestore & Auth Connected (aero-field)" : "Firebase Initializing"}
-          >
-            <span className={`w-2 h-2 rounded-full ${isFirebaseConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-            <span className="hidden xs:inline">{isFirebaseConnected ? (isBn ? 'ক্লাউড সিঙ্ক' : 'Cloud Live') : (isBn ? 'সংযুক্ত হচ্ছে' : 'Connecting')}</span>
-          </div>
-
           {/* AI Agronomist Quick Button */}
           <button
             id="navbar-ai-assistant-btn"
