@@ -14,7 +14,7 @@ import {
   Check
 } from 'lucide-react';
 import { Language, PredictionResult } from '../types';
-import { BANGLADESH_DISTRICTS } from '../data/bangladeshAgriData';
+import { BANGLADESH_DISTRICTS, getDistrictNameBn } from '../data/bangladeshAgriData';
 import { DynamicIconPic } from './DynamicIconPic';
 
 interface RiskPredictorCardProps {
@@ -317,7 +317,7 @@ export const RiskPredictorCard: React.FC<RiskPredictorCardProps> = ({
                 </span>
               </div>
               <span className="text-xs sm:text-sm font-extrabold text-[#1E5128] truncate block mt-0.5">
-                {district} {isBn ? 'জেলা' : 'District'}
+                {isBn ? getDistrictNameBn(district) : district} {isBn ? 'জেলা' : 'District'}
               </span>
             </div>
           </div>

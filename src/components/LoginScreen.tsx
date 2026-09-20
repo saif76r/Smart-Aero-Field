@@ -17,7 +17,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { Language, FarmerUser } from '../types';
-import { BANGLADESH_DISTRICTS } from '../data/bangladeshAgriData';
+import { BANGLADESH_DISTRICTS, getDistrictNameBn } from '../data/bangladeshAgriData';
 import { 
   verifyFarmerLogin, 
   registerFarmerAccount, 
@@ -468,7 +468,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                   >
                     {BANGLADESH_DISTRICTS.map((d) => (
                       <option key={d} value={d}>
-                        {d}
+                        {isBn ? `${getDistrictNameBn(d)} (${d})` : d}
                       </option>
                     ))}
                   </select>

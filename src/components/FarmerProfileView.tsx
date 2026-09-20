@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { Language, FarmerUser } from '../types';
 import { ProfileEditModal } from './ProfileEditModal';
+import { getDistrictLandData } from '../data/weatherData';
+import { getDistrictNameBn } from '../data/bangladeshAgriData';
 
 interface FarmerProfileViewProps {
   language: Language;
@@ -48,6 +50,10 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
   const displayExperience = user?.experienceYears || '12';
   const displayPhoto = user?.photoUrl || '';
   const displayBio = user?.bio || (isBn ? 'আধুনিক প্রযুক্তি ও সুষম সার ব্যবহারে সমৃদ্ধ পরিবেশবান্ধব খামার।' : 'Progressive farmer practicing modern climate-resilient agriculture.');
+
+  const landData = getDistrictLandData(displayDistrict);
+  const toBnDigits = (val: number | string) =>
+    String(val).replace(/\d/g, (ch) => '০১২৩৪৫৬৭৮৯'[parseInt(ch, 10)]);
 
   // Format crops list display
   const primaryCropsList = user?.primaryCrops && user.primaryCrops.length > 0
@@ -121,7 +127,7 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
               </div>
               <p className="text-xs text-green-200 flex items-center mt-0.5">
                 <MapPin className="w-3.5 h-3.5 mr-1 text-[#D8E9A8] flex-shrink-0" />
-                <span>{displayDistrict}, Bangladesh</span>
+                <span>{isBn ? `${getDistrictNameBn(displayDistrict)}, বাংলাদেশ` : `${displayDistrict}, Bangladesh`}</span>
               </p>
               <p className="text-[11px] text-green-100 mt-1 leading-snug">
                 {isBn 
@@ -187,7 +193,7 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
           </span>
         </div>
 
-        {/* 1. Satellite & Soil Vigor Metrics */}
+        {/* 1. Satellite & Soil Vigor Metrics (Dynamic for Farmer's District) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl">
             <div className="flex items-center justify-between text-xs text-emerald-800 font-medium mb-1">
@@ -195,13 +201,16 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
                 <Leaf className="w-3.5 h-3.5 mr-1 text-emerald-700" />
                 {isBn ? 'গাছের সতেজতা (NDVI)' : 'Canopy Vigor'}
               </span>
-              <span className="font-bold">০.৭৮</span>
+              <span className="font-bold">{landData.ndvi}</span>
             </div>
             <div className="w-full bg-emerald-200 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-[#1E5128] h-full rounded-full w-[78%]"></div>
+              <div 
+                className="bg-[#1E5128] h-full rounded-full transition-all duration-500" 
+                style={{ width: `${Math.min(100, Math.round(landData.ndvi * 100))}%` }}
+              />
             </div>
-            <span className="text-[10px] text-emerald-700 font-semibold block mt-1.5">
-              {isBn ? '✓ বলিষ্ঠ সবুজ বৃদ্ধি' : '✓ Robust vegetative growth'}
+            <span className="text-[10px] text-emerald-700 font-semibold block mt-1.5 truncate">
+              ✓ {isBn ? landData.ndviStatusBn : landData.ndviStatusEn}
             </span>
           </div>
 
@@ -211,13 +220,18 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
                 <Droplets className="w-3.5 h-3.5 mr-1 text-blue-700" />
                 {isBn ? 'মাটির আর্দ্রতা স্তর' : 'Soil Moisture'}
               </span>
-              <span className="font-bold">২৩%</span>
+              <span className="font-bold">
+                {isBn ? `${toBnDigits(landData.soilMoisture)}%` : `${landData.soilMoisture}%`}
+              </span>
             </div>
             <div className="w-full bg-blue-200 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-blue-600 h-full rounded-full w-[65%]"></div>
+              <div 
+                className="bg-blue-600 h-full rounded-full transition-all duration-500" 
+                style={{ width: `${Math.min(100, landData.soilMoisture)}%` }}
+              />
             </div>
-            <span className="text-[10px] text-blue-700 font-semibold block mt-1.5">
-              {isBn ? '✓ সন্তোষজনক আর্দ্রতা' : '✓ Adequate soil moisture'}
+            <span className="text-[10px] text-blue-700 font-semibold block mt-1.5 truncate">
+              ✓ {isBn ? landData.soilMoistureStatusBn : landData.soilMoistureStatusEn}
             </span>
           </div>
 
@@ -225,15 +239,17 @@ export const FarmerProfileView: React.FC<FarmerProfileViewProps> = ({
             <div className="flex items-center justify-between text-xs text-amber-800 font-medium mb-1">
               <span className="flex items-center">
                 <TrendingUp className="w-3.5 h-3.5 mr-1 text-amber-700" />
-                {isBn ? 'সার পুষ্টি ভারসাম্য' : 'NPK Nutrient Balance'}
+                {isBn ? 'মৃত্তিকা গঠন ও NPK' : 'Soil & NPK Profile'}
               </span>
-              <span className="font-bold">{isBn ? 'উত্তম' : 'Optimal'}</span>
+              <span className="font-bold text-[11px] truncate max-w-[90px]">
+                {isBn ? landData.nitrogenBn : landData.nitrogenEn}
+              </span>
             </div>
             <div className="w-full bg-amber-200 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-amber-600 h-full rounded-full w-[85%]"></div>
+              <div className="bg-amber-600 h-full rounded-full w-[80%]"></div>
             </div>
-            <span className="text-[10px] text-amber-700 font-semibold block mt-1.5">
-              {isBn ? '✓ নাইট্রোজেন ও পটাশ ব্যালান্সড' : '✓ Nitrogen & Potash in check'}
+            <span className="text-[10px] text-amber-700 font-semibold block mt-1.5 truncate">
+              ✓ {isBn ? landData.soilTextureBn : landData.soilTextureEn}
             </span>
           </div>
         </div>

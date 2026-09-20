@@ -12,7 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Language, FarmerUser } from '../types';
-import { BANGLADESH_DISTRICTS } from '../data/bangladeshAgriData';
+import { BANGLADESH_DISTRICTS, getDistrictNameBn } from '../data/bangladeshAgriData';
 
 interface ProfileEditModalProps {
   isOpen: boolean;
@@ -342,7 +342,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({
               >
                 {BANGLADESH_DISTRICTS.map((d) => (
                   <option key={d} value={d}>
-                    {d}
+                    {isBn ? `${getDistrictNameBn(d)} (${d})` : d}
                   </option>
                 ))}
               </select>

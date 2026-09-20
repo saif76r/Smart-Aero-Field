@@ -9,7 +9,7 @@ import {
   ShoppingBag
 } from 'lucide-react';
 import { Language, MarketItem } from '../types';
-import { BANGLADESH_DISTRICTS, INITIAL_MARKET_ITEMS } from '../data/bangladeshAgriData';
+import { BANGLADESH_DISTRICTS, INITIAL_MARKET_ITEMS, getDistrictNameBn } from '../data/bangladeshAgriData';
 
 interface MarketPriceViewProps {
   language: Language;
@@ -70,7 +70,7 @@ export const MarketPriceView: React.FC<MarketPriceViewProps> = ({
           >
             {BANGLADESH_DISTRICTS.map((dist) => (
               <option key={dist} value={dist}>
-                {dist} {isBn ? 'পাইকারি বাজার' : 'Wholesale Market'}
+                {isBn ? `${getDistrictNameBn(dist)} পাইকারি বাজার (${dist})` : `${dist} Wholesale Market`}
               </option>
             ))}
           </select>

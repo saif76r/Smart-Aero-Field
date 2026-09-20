@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
   Satellite, 
@@ -10,14 +10,16 @@ import {
   Gauge, 
   Sun, 
   CloudSun, 
-  Layers,
-  MapPin,
-  CheckCircle2,
-  AlertCircle
+  Layers, 
+  MapPin, 
+  CheckCircle2, 
+  AlertCircle,
+  ChevronDown
 } from 'lucide-react';
 import { Language } from '../types';
 import { RiskPredictorCard } from './RiskPredictorCard';
-import { getDistrictWeather, getLiveDateDisplay } from '../data/weatherData';
+import { getDistrictWeather, getDistrictLandData, getLiveDateDisplay } from '../data/weatherData';
+import { BANGLADESH_DISTRICTS, getDistrictNameBn } from '../data/bangladeshAgriData';
 
 interface NasaEarthViewProps {
   language: Language;
@@ -37,14 +39,24 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
   const isBn = language === 'bn';
   const [activeTab, setActiveTab] = useState<'risk' | 'land' | 'weather' | 'soil'>('risk');
 
-  // Live real-time district weather and date
-  const weather = getDistrictWeather(selectedDistrict);
+  // Interactive district selection that syncs with prop but allows instant live switching
+  const [currentDistrict, setCurrentDistrict] = useState<string>(selectedDistrict || 'Dhaka');
+
+  useEffect(() => {
+    if (selectedDistrict) {
+      setCurrentDistrict(selectedDistrict);
+    }
+  }, [selectedDistrict]);
+
+  // Live real-time district weather, land condition and soil telemetry
+  const weather = getDistrictWeather(currentDistrict);
+  const landData = getDistrictLandData(currentDistrict);
   const liveDate = getLiveDateDisplay(isBn);
 
   const toBnDigits = (val: number | string) =>
     String(val).replace(/\d/g, (ch) => '০১২৩৪৫৬৭৮৯'[parseInt(ch, 10)]);
 
-  // Dynamically calculate 7-day forecast starting from today (Friday if today is Friday)
+  // Dynamically calculate 7-day forecast starting from today
   const currentDayIdx = new Date().getDay(); // 0 = Sun, 1 = Mon, ..., 5 = Fri, 6 = Sat
   const daysShortEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const daysShortBn = ['রবি', 'সোম', 'মঙ্গল', 'বুধ', 'বৃহঃ', 'শুক্র', 'শনি'];
@@ -109,15 +121,33 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                 className="w-full h-full object-cover scale-[1.04]"
               />
             </div>
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-xl font-black flex items-center gap-1.5 truncate text-white">
-                <span>NASA Earth Data</span>
-                <span className="text-[10px] bg-blue-500/30 border border-blue-400/40 text-cyan-200 px-2 py-0.5 rounded-full font-bold uppercase flex-shrink-0 backdrop-blur-xs">
-                  POWER API
-                </span>
-              </h1>
-              <p className="text-xs text-slate-200 truncate">
-                {isBn ? 'স্যাটেলাইটের মাধ্যমে আপনার জমির তথ্য' : 'Your land information from satellite telemetry'}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <h1 className="text-lg sm:text-xl font-black flex items-center gap-1.5 truncate text-white">
+                  <span>NASA Earth Data</span>
+                  <span className="text-[10px] bg-blue-500/30 border border-blue-400/40 text-cyan-200 px-2 py-0.5 rounded-full font-bold uppercase flex-shrink-0 backdrop-blur-xs">
+                    POWER API
+                  </span>
+                </h1>
+                {/* Compact District Switcher in Top Bar */}
+                <div className="flex items-center space-x-1 bg-white/15 backdrop-blur-md px-2 py-1 rounded-xl border border-white/25 shadow-xs">
+                  <MapPin className="w-3 h-3 text-emerald-400 flex-shrink-0" />
+                  <select
+                    id="nasa-header-district-select"
+                    value={currentDistrict}
+                    onChange={(e) => setCurrentDistrict(e.target.value)}
+                    className="bg-transparent text-white font-bold text-xs border-none outline-none cursor-pointer focus:ring-0 pr-1 py-0"
+                  >
+                    {BANGLADESH_DISTRICTS.map((d) => (
+                      <option key={d} value={d} className="bg-slate-900 text-white">
+                        {isBn ? `${getDistrictNameBn(d)} (${d})` : d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p className="text-xs text-slate-200 truncate mt-0.5">
+                {isBn ? `${getDistrictNameBn(currentDistrict)} জেলার স্যাটেলাইট ও মৃত্তিকা তথ্য` : `Satellite & soil telemetry for ${currentDistrict}`}
               </p>
             </div>
           </div>
@@ -175,25 +205,25 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
         </div>
       </div>
 
-      {/* Main Content Area - Clean Spacing Without Overlapping Header */}
+      {/* Main Content Area */}
       <div className="mt-4 space-y-4">
         {/* Tab 0: Agriculture Risk & Crop Suitability Predictor */}
         {activeTab === 'risk' && (
           <div>
             <RiskPredictorCard
               language={language}
-              userDistrict={selectedDistrict}
+              userDistrict={currentDistrict}
               onNavigateToCropGuide={onNavigateToCropGuide}
               onOpenChatWithTopic={onOpenChatWithTopic}
             />
           </div>
         )}
 
-        {/* Tab 1: Land Condition (Matching Screenshot 5) */}
+        {/* Tab 1: Land Condition (Dynamic per District) */}
         {activeTab === 'land' && (
           <div className="space-y-4">
             {/* Satellite Map Preview Card */}
-            <div className="relative rounded-2xl overflow-hidden bg-gray-900 h-44 border border-gray-200 shadow-sm">
+            <div className="relative rounded-2xl overflow-hidden bg-gray-900 h-48 border border-gray-200 shadow-sm">
               <img
                 src="/images/aerial_field.jpg"
                 alt="Satellite Field NDVI"
@@ -202,33 +232,50 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   (e.target as HTMLImageElement).src = '/logo.png';
                 }}
               />
-              <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg text-white text-[10px] font-mono flex items-center space-x-1">
-                <MapPin className="w-3 h-3 text-emerald-400" />
-                <span>{selectedDistrict}, Bangladesh</span>
+              {/* Location Pill with Interactive Selector */}
+              <div className="absolute top-2 right-2 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-xl text-white text-xs font-medium flex items-center space-x-1.5 border border-white/20 shadow-lg">
+                <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                <select
+                  id="nasa-land-district-selector"
+                  value={currentDistrict}
+                  onChange={(e) => setCurrentDistrict(e.target.value)}
+                  className="bg-transparent text-white font-bold text-xs border-none outline-none cursor-pointer focus:ring-0 pr-1 py-0.5"
+                >
+                  {BANGLADESH_DISTRICTS.map((d) => (
+                    <option key={d} value={d} className="bg-slate-900 text-white">
+                      {isBn ? `${getDistrictNameBn(d)} (${d})` : `${d}, Bangladesh`}
+                    </option>
+                  ))}
+                </select>
               </div>
-              <div className="absolute bottom-2 left-2 bg-black/75 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-bold border border-emerald-400/40">
-                NDVI: 0.72 (Healthy Vegetation)
+
+              {/* Dynamic NDVI banner badge for selected district */}
+              <div className="absolute bottom-2 left-2 bg-black/80 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-400/50 flex items-center space-x-1.5 shadow-md">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                <span>
+                  NDVI: {landData.ndvi} ({isBn ? landData.ndviStatusBn : landData.ndviStatusEn})
+                </span>
               </div>
             </div>
 
-            {/* 4 Metric Cards (Matching Screenshot 5 exactly) */}
+            {/* 4 Metric Cards - Fully Dynamic per selected district */}
             <div className="grid grid-cols-2 gap-3">
               {/* NDVI */}
-              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3">
+              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3 transition-all hover:shadow-md">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
                   <Leaf className="w-5 h-5" />
                 </div>
                 <div>
                   <span className="text-[11px] font-bold text-gray-500 uppercase block">NDVI</span>
-                  <span className="text-base font-black text-gray-900">0.72</span>
-                  <span className="text-[10px] font-bold text-emerald-600 block">
-                    {isBn ? 'চমৎকার' : 'Good Health'}
+                  <span className="text-base font-black text-gray-900">{landData.ndvi}</span>
+                  <span className="text-[10px] font-bold text-emerald-600 block truncate">
+                    {isBn ? landData.ndviStatusBn : landData.ndviStatusEn}
                   </span>
                 </div>
               </div>
 
               {/* Soil Moisture */}
-              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3">
+              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3 transition-all hover:shadow-md">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
                   <Droplets className="w-5 h-5" />
                 </div>
@@ -236,15 +283,17 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   <span className="text-[11px] font-bold text-gray-500 uppercase block">
                     {isBn ? 'মাটির আর্দ্রতা' : 'Soil Moisture'}
                   </span>
-                  <span className="text-base font-black text-gray-900">32%</span>
-                  <span className="text-[10px] font-bold text-amber-600 block">
-                    {isBn ? 'মাঝারি' : 'Medium'}
+                  <span className="text-base font-black text-gray-900">
+                    {isBn ? `${toBnDigits(landData.soilMoisture)}%` : `${landData.soilMoisture}%`}
+                  </span>
+                  <span className={`text-[10px] font-bold block truncate ${landData.soilMoisture < 30 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {isBn ? landData.soilMoistureStatusBn : landData.soilMoistureStatusEn}
                   </span>
                 </div>
               </div>
 
               {/* Temperature */}
-              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3">
+              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3 transition-all hover:shadow-md">
                 <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center flex-shrink-0">
                   <Thermometer className="w-5 h-5" />
                 </div>
@@ -252,15 +301,17 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   <span className="text-[11px] font-bold text-gray-500 uppercase block">
                     {isBn ? 'তাপমাত্রা' : 'Temperature'}
                   </span>
-                  <span className="text-base font-black text-gray-900">29.4 °C</span>
-                  <span className="text-[10px] font-bold text-emerald-600 block">
-                    {isBn ? 'স্বাভাবিক' : 'Normal'}
+                  <span className="text-base font-black text-gray-900">
+                    {isBn ? `${toBnDigits(landData.temp)} °সে` : `${landData.temp} °C`}
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-600 block truncate">
+                    {isBn ? landData.tempStatusBn : landData.tempStatusEn}
                   </span>
                 </div>
               </div>
 
               {/* Rainfall */}
-              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3">
+              <div className="bg-white p-3.5 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-3 transition-all hover:shadow-md">
                 <div className="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center flex-shrink-0">
                   <CloudRain className="w-5 h-5" />
                 </div>
@@ -268,20 +319,35 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   <span className="text-[11px] font-bold text-gray-500 uppercase block">
                     {isBn ? 'বৃষ্টিপাত' : 'Rain Fall'}
                   </span>
-                  <span className="text-base font-black text-gray-900">12 mm</span>
+                  <span className="text-base font-black text-gray-900">
+                    {isBn ? `${toBnDigits(landData.rainFall7d)} মিমি` : `${landData.rainFall7d} mm`}
+                  </span>
                   <span className="text-[10px] text-gray-500 block">
                     ({isBn ? 'গত ৭ দিন' : 'last 7 days'})
                   </span>
                 </div>
               </div>
             </div>
+
+            {/* Regional AEZ Classification Banner */}
+            <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2">
+                <Layers className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+                <span className="font-semibold text-emerald-900">
+                  {isBn ? landData.aezNameBn : landData.aezNameEn}
+                </span>
+              </div>
+              <span className="text-[10px] font-bold bg-white text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full shadow-2xs">
+                NASA MODIS & BARC
+              </span>
+            </div>
           </div>
         )}
 
-        {/* Tab 2: Weather & Forecast (Matching Screenshot 6) */}
+        {/* Tab 2: Weather & Forecast */}
         {activeTab === 'weather' && (
           <div className="space-y-4">
-            {/* Weather Card with Picture-Type Glassy Atmosphere (Requested by User) */}
+            {/* Weather Card with Picture-Type Glassy Atmosphere */}
             <div className="rounded-3xl p-5 text-white shadow-xl relative overflow-hidden border border-white/35 backdrop-blur-md">
               {/* Scenic Background Picture */}
               <img
@@ -289,7 +355,6 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                 alt="Atmospheric Weather Sky"
                 className="absolute inset-0 w-full h-full object-cover scale-105 filter saturate-[1.15] brightness-90 transition-transform duration-700 hover:scale-110"
                 onError={(e) => {
-                  // Graceful fallback to aerial field if needed
                   (e.target as HTMLImageElement).src = '/images/aerial_field.jpg';
                 }}
               />
@@ -305,7 +370,18 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   <div>
                     <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-xs text-white font-semibold shadow-xs">
                       <MapPin className="w-3.5 h-3.5 text-[#D8E9A8]" />
-                      <span>{selectedDistrict}, Bangladesh</span>
+                      <select
+                        id="nasa-weather-district-select"
+                        value={currentDistrict}
+                        onChange={(e) => setCurrentDistrict(e.target.value)}
+                        className="bg-transparent text-white font-bold text-xs border-none outline-none cursor-pointer focus:ring-0 pr-1 py-0"
+                      >
+                        {BANGLADESH_DISTRICTS.map((d) => (
+                          <option key={d} value={d} className="bg-slate-900 text-white">
+                            {isBn ? `${getDistrictNameBn(d)} (${d})` : `${d}, Bangladesh`}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <h3 className="text-4xl sm:text-5xl font-black mt-2.5 tracking-tight drop-shadow-md text-white">
                       {isBn ? `+${toBnDigits(weather.temp)} °সে` : `+${weather.temp} °C`}
@@ -328,7 +404,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </div>
                 </div>
 
-                {/* Atmospheric Sub-stats (Glass Pill Panel) */}
+                {/* Atmospheric Sub-stats */}
                 <div className="grid grid-cols-3 gap-2 mt-4 pt-3.5 pb-2.5 px-3 rounded-2xl bg-black/25 backdrop-blur-md border border-white/20 text-center text-xs shadow-inner">
                   <div>
                     <span className="text-[10px] text-green-200 block font-medium">
@@ -348,15 +424,15 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </div>
                   <div>
                     <span className="text-[10px] text-green-200 block font-medium">
-                      {isBn ? 'বায়ুমণ্ডলীয় চাপ' : 'Pressure'}
+                      {isBn ? 'বৃষ্টিপাতের ঝুঁকি' : 'Rain Chance'}
                     </span>
                     <span className="font-extrabold text-white text-sm sm:text-base">
-                      {isBn ? '১০১২ hPa' : '1012 hPa'}
+                      {isBn ? `${toBnDigits(weather.rainChance)}%` : `${weather.rainChance}%`}
                     </span>
                   </div>
                 </div>
 
-                {/* 7-Day Forecast Strip with Frosted Glass Chips */}
+                {/* 7-Day Forecast Strip */}
                 <div className="mt-4 pt-3 border-t border-white/20">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] sm:text-[11px] font-bold text-green-200 uppercase tracking-wider block drop-shadow-xs">
@@ -399,10 +475,10 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
               </div>
             </div>
 
-            {/* Important Information for Farming Card (Screenshot 6) */}
+            {/* Farming Guidance for Current Weather */}
             <div className="bg-[#E7F7ED] border border-[#BDE8CB] rounded-2xl p-4 text-gray-900 shadow-sm">
               <h4 className="text-xs font-bold text-[#1E5128] uppercase tracking-wider mb-3">
-                {isBn ? 'চাষের জন্য গুরুত্বপূর্ণ পূর্বাভাস ও তথ্য' : 'Important Information for Farming'}
+                {isBn ? `${currentDistrict} অঞ্চলের জন্য চাষের গুরুত্বপূর্ণ তথ্য` : `Farming Guidance for ${currentDistrict}`}
               </h4>
 
               <div className="space-y-3">
@@ -416,10 +492,14 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </div>
                   <div className="flex-1">
                     <span className="text-xs sm:text-sm font-bold block text-gray-900">
-                      {isBn ? 'মাঝারি বৃষ্টির সম্ভাবনা' : 'Moderate Chance of Rain'}
+                      {weather.rainChance > 40
+                        ? (isBn ? 'বৃষ্টিপাতের উচ্চ সম্ভাবনা' : 'High Chance of Rain')
+                        : (isBn ? 'স্বল্প বৃষ্টির সম্ভাবনা' : 'Low Chance of Rain')}
                     </span>
                     <span className="text-[11px] text-gray-600">
-                      {isBn ? 'জমির নিচু অংশে অতিরিক্ত পানি জমতে দেবেন না।' : 'Avoid fertilizer application right before sudden showers.'}
+                      {weather.rainChance > 40
+                        ? (isBn ? 'জমির নিচু অংশে নিষ্কাশন নিশ্চিত করুন। সার প্রয়োগ স্থগিত রাখুন।' : 'Ensure field drainage. Postpone fertilizer broadcasting.')
+                        : (isBn ? 'হালকা আর্দ্রতা রয়েছে, প্রয়োজনীয় সেচের পরিকল্পনা নিন।' : 'Soil moisture stable, plan irrigation as scheduled.')}
                     </span>
                   </div>
                 </div>
@@ -430,10 +510,12 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </div>
                   <div className="flex-1">
                     <span className="text-xs sm:text-sm font-bold block text-gray-900">
-                      {isBn ? 'মাটিতে পর্যাপ্ত আর্দ্রতা' : 'Sufficient Soil Moisture'}
+                      {isBn ? `মাটির আর্দ্রতা: ${toBnDigits(landData.soilMoisture)}%` : `Soil Moisture: ${landData.soilMoisture}%`}
                     </span>
                     <span className="text-[11px] text-gray-600">
-                      {isBn ? 'আপাতত অতিরিক্ত সেচ পরিহার করুন।' : 'Irrigation can be paused for next 48 hours.'}
+                      {landData.soilMoisture < 30
+                        ? (isBn ? 'মাটির আর্দ্রতা কম, দ্রুত সেচ প্রদান জরুরি।' : 'Soil moisture is low, timely irrigation recommended.')
+                        : (isBn ? 'মাটিতে উপযুক্ত আর্দ্রতা বিরাজমান।' : 'Optimal soil wetness, no excess water needed.')}
                     </span>
                   </div>
                 </div>
@@ -444,10 +526,10 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   </div>
                   <div className="flex-1">
                     <span className="text-xs sm:text-sm font-bold block text-gray-900">
-                      {isBn ? 'ফসলের জন্য উপযুক্ত তাপমাত্রা' : 'Temperature is Suitable for Crops'}
+                      {isBn ? `তাপমাত্রা: ${toBnDigits(landData.temp)} °সে (${landData.tempStatusBn})` : `Temperature: ${landData.temp} °C (${landData.tempStatusEn})`}
                     </span>
                     <span className="text-[11px] text-gray-600">
-                      {isBn ? 'ধানের ফুল ও দানা গঠনের জন্য আদর্শ তাপমাত্রা।' : 'Favorable thermal conditions for grain filling & flowering.'}
+                      {isBn ? 'ফসলের বৃদ্ধি ও পরাগায়নের জন্য অনুকূল পরিবেশ।' : 'Favorable thermal conditions for active growth and grain filling.'}
                     </span>
                   </div>
                 </div>
@@ -456,7 +538,7 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
           </div>
         )}
 
-        {/* Tab 3: Soil & Moisture */}
+        {/* Tab 3: Soil & Moisture (Dynamic per District) */}
         {activeTab === 'soil' && (
           <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-4">
             <div className="flex items-center space-x-3">
@@ -467,40 +549,50 @@ export const NasaEarthView: React.FC<NasaEarthViewProps> = ({
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div>
-                <h4 className="font-bold text-sm text-gray-900">
-                  {isBn ? 'মাটির স্বাস্থ্য প্রোফাইল' : 'Topsoil Agro-Ecological Health'}
-                </h4>
-                <p className="text-xs text-gray-500">
-                  {isBn ? 'দোআঁশ ও এঁটেল দোআঁশ মাটি' : 'Sandy Clay Loam Texture'}
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-sm text-gray-900">
+                    {isBn ? `${currentDistrict} মাটির স্বাস্থ্য প্রোফাইল` : `${currentDistrict} Soil Health Profile`}
+                  </h4>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                    {isBn ? 'BARC সারগ্রন্থ' : 'BARC AEZ'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 mt-0.5 font-medium">
+                  {isBn ? landData.soilTextureBn : landData.soilTextureEn}
                 </p>
-                <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded bg-green-100 text-green-800">
-                  {isBn ? 'pH ৬.৪ (আদর্শ)' : 'pH 6.4 (Optimal)'}
-                </span>
+                <div className="flex items-center space-x-2 mt-1">
+                  <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                    {isBn ? `pH ${toBnDigits(landData.soilPh)} (${landData.soilPhStatusBn})` : `pH ${landData.soilPh} (${landData.soilPhStatusEn})`}
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-medium">
+                    {isBn ? landData.aezNameBn : landData.aezNameEn}
+                  </span>
+                </div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center pt-2">
-              <div className="p-2 rounded-xl bg-gray-50 border border-gray-200">
+              <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-200">
                 <span className="text-[10px] font-medium text-gray-500 block">Nitrogen (N)</span>
-                <span className="font-bold text-xs text-amber-700">{isBn ? 'মাঝারি' : 'Medium'}</span>
+                <span className="font-bold text-xs text-amber-700">{isBn ? landData.nitrogenBn : landData.nitrogenEn}</span>
               </div>
-              <div className="p-2 rounded-xl bg-gray-50 border border-gray-200">
+              <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-200">
                 <span className="text-[10px] font-medium text-gray-500 block">Phosphorus (P)</span>
-                <span className="font-bold text-xs text-emerald-700">{isBn ? 'পর্যাপ্ত' : 'Adequate'}</span>
+                <span className="font-bold text-xs text-emerald-700">{isBn ? landData.phosphorusBn : landData.phosphorusEn}</span>
               </div>
-              <div className="p-2 rounded-xl bg-gray-50 border border-gray-200">
+              <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-200">
                 <span className="text-[10px] font-medium text-gray-500 block">Potassium (K)</span>
-                <span className="font-bold text-xs text-emerald-700">{isBn ? 'উচ্চ' : 'High'}</span>
+                <span className="font-bold text-xs text-emerald-700">{isBn ? landData.potassiumBn : landData.potassiumEn}</span>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() => onOpenChatWithTopic?.('What organic manure and fertilizer doses should I add for Sandy Clay Loam soil in Bangladesh?')}
-              className="w-full py-2.5 bg-[#1E5128] hover:bg-[#163e1e] text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 shadow-sm"
+              onClick={() => onOpenChatWithTopic?.(`What organic manure and fertilizer doses should I add for ${landData.soilTextureEn} in ${currentDistrict} district of Bangladesh?`)}
+              className="w-full py-2.5 bg-[#1E5128] hover:bg-[#163e1e] text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center space-x-1.5 shadow-sm cursor-pointer"
             >
-              <span>{isBn ? 'মাটি অনুযায়ী সারের মাত্রা জানুন' : 'Get Soil Fertilizer Plan from AI'}</span>
+              <span>{isBn ? `${currentDistrict} মাটির জন্য সারের সঠিক মাত্রা জানুন` : `Get Fertilizer Recommendation for ${currentDistrict}`}</span>
             </button>
           </div>
         )}

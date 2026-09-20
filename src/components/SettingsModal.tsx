@@ -11,7 +11,7 @@ import {
   Info
 } from 'lucide-react';
 import { Language } from '../types';
-import { BANGLADESH_DISTRICTS } from '../data/bangladeshAgriData';
+import { BANGLADESH_DISTRICTS, getDistrictNameBn } from '../data/bangladeshAgriData';
 import { requestBrowserPushPermission } from '../utils/agronomicEngine';
 
 interface SettingsModalProps {
@@ -171,7 +171,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             >
               {BANGLADESH_DISTRICTS.map((d) => (
                 <option key={d} value={d}>
-                  {d} {d === 'Rajshahi' ? (isBn ? '(রাজশাহী)' : '') : ''}
+                  {isBn ? `${getDistrictNameBn(d)} (${d})` : d}
                 </option>
               ))}
             </select>
