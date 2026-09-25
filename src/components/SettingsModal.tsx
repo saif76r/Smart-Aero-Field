@@ -8,7 +8,8 @@ import {
   Bell, 
   Smartphone, 
   CheckCircle2, 
-  Info
+  Info,
+  Key
 } from 'lucide-react';
 import { Language } from '../types';
 import { BANGLADESH_DISTRICTS, getDistrictNameBn } from '../data/bangladeshAgriData';
@@ -38,10 +39,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [weatherAlerts, setWeatherAlerts] = useState(true);
   const [offlineCache, setOfflineCache] = useState(true);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [customGeminiKey, setCustomGeminiKey] = useState(() => {
+    try {
+      return localStorage.getItem('krishi_custom_gemini_key') || '';
+    } catch {
+      return '';
+    }
+  });
 
   const handleSave = () => {
     if (onChangeDistrict && selectedDistrict !== currentDistrict) {
       onChangeDistrict(selectedDistrict);
+    }
+    try {
+      if (customGeminiKey.trim()) {
+        localStorage.setItem('krishi_custom_gemini_key', customGeminiKey.trim());
+      } else {
+        localStorage.removeItem('krishi_custom_gemini_key');
+      }
+    } catch (e) {
+      console.warn('Failed saving custom gemini key', e);
     }
     setSavedSuccess(true);
     setTimeout(() => {
@@ -230,6 +247,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className="rounded text-[#1E5128] focus:ring-[#1E5128] w-4 h-4"
                 />
               </label>
+            </div>
+          </div>
+
+          {/* Gemini AI API Key / Vercel Settings */}
+          <div>
+            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider block mb-2">
+              {isBn ? 'জেমিনি এআই কনফিগারেশন (Vercel / ক্লাউড)' : 'Gemini AI Configuration (Vercel / Cloud)'}
+            </label>
+            <div className="p-3 bg-green-50/60 rounded-xl border border-green-200">
+              <div className="flex items-center space-x-2 mb-1.5">
+                <Key className="w-4 h-4 text-[#1E5128]" />
+                <span className="text-xs font-bold text-gray-800">
+                  {isBn ? 'কাস্টম জেমিনি এআই কী (ঐচ্ছিক)' : 'Custom Gemini API Key (Optional)'}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-600 mb-2 leading-relaxed">
+                {isBn 
+                  ? 'Vercel-এ লাইভ এআই সক্রিয় করতে Vercel Environment Variables-এ GEMINI_API_KEY যোগ করুন, অথবা নিচের বক্সে আপনার ফ্রি কী প্রবেশ করিয়ে সংরক্ষণ করুন।'
+                  : 'On Vercel, set GEMINI_API_KEY in Environment Variables, or enter your personal Gemini API key below.'}
+              </p>
+              <input
+                type="password"
+                placeholder={isBn ? 'AIzaSy...' : 'Enter Gemini API Key...'}
+                value={customGeminiKey}
+                onChange={(e) => setCustomGeminiKey(e.target.value)}
+                className="w-full text-xs px-3 py-2 bg-white rounded-lg border border-gray-300 focus:outline-none focus:ring-1 focus:ring-[#1E5128] font-mono text-gray-700"
+              />
             </div>
           </div>
 

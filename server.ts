@@ -10,9 +10,16 @@ app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 // Lazy initialize Gemini client
 function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.VITE_GEMINI_API_KEY ||
+    process.env.VITE_GOOGLE_API_KEY ||
+    process.env.GEMINI_KEY ||
+    process.env.API_KEY;
   if (!apiKey) {
-    console.warn("GEMINI_API_KEY is not set. Gemini features will run in advisory fallback mode.");
+    console.warn("GEMINI_API_KEY is not set. Gemini features will run in intelligent agro-advisory mode.");
     return null;
   }
   return new GoogleGenAI({
@@ -175,18 +182,11 @@ app.post("/api/gemini/chat", async (req, res) => {
     }
 
     const ai = getGeminiClient();
-    if (!ai) {
-      // Fallback response if no API key
-      const isBn = language === "bn";
-      const fallbackReply = isBn
-        ? "স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ প্রস্তুত। ধানের ব্লাস্ট বা মাজরা পোকা দমনে অনুমোদিত ট্রাইসাইক্লাজোল বা কার্বোফিউরান পরিমিত মাত্রায় প্রয়োগ করুন। অতিরিক্ত ইউরিয়া ব্যবহার পরিহার করুন।"
-        : "Smart Aero Field AI Agronomist recommendation: For Rice Blast prevention, use Tricyclazole 75% WP at recommended dosage. Ensure optimal field water drainage and avoid excessive nitrogen fertilizer.";
-      return res.json({ reply: fallbackReply });
-    }
-
-    const systemPrompt = `You are "Smart Aero Field AI Agronomist" (স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ), a dedicated expert agricultural consultant for smallholder farmers in Bangladesh and South Asia.
+    if (ai) {
+      const systemPrompt = `You are "Smart Aero Field AI Agronomist" (স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ), a dedicated expert agricultural consultant for smallholder farmers in Bangladesh and South Asia.
 Current conversation language requested: ${language === "bn" ? "Bengali (বাংলা)" : "English"}.
 Always respond clearly, warmly, respectfully, and practically.
+When greeting in Bengali, always use "হ্যালো" (Hello) or "আসসালামু আলাইকুম / হ্যালো". Never use "নমস্কার".
 Include concrete, practical steps:
 - Identify pest, fungus, or disease quickly
 - Provide specific chemical active ingredients (e.g., Tricyclazole, Mancozeb, Carbendazim, Imidacloprid) with exact dosage
@@ -194,78 +194,73 @@ Include concrete, practical steps:
 - Advise on water management and balanced fertilizer application (Urea, TSP, MoP, Gypsum, Zinc)
 Keep paragraphs concise and bulleted for easy reading on mobile screens by farmers.`;
 
-    const contents = [
-      ...history.map((h: { role: string; text: string }) => ({
-        role: h.role === "user" ? "user" : "model",
-        parts: [{ text: h.text }],
-      })),
-      {
-        role: "user",
-        parts: [{ text: message }],
-      },
-    ];
+      const contents = [
+        ...history.map((h: { role: string; text: string }) => ({
+          role: h.role === "user" ? "user" : "model",
+          parts: [{ text: h.text }],
+        })),
+        {
+          role: "user",
+          parts: [{ text: message }],
+        },
+      ];
 
-    // Multi-model failover sequence: gemini-2.5-flash -> gemini-3.8-flash -> gemini-3.1-flash-lite
-    // Prevents 503 "model experiencing high demand" from interrupting farmer queries
-    const candidateModels = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"];
-    let reply = "";
+      // Multi-model failover sequence: gemini-2.5-flash -> gemini-3.8-flash -> gemini-3.1-flash-lite
+      const candidateModels = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"];
+      for (const modelCandidate of candidateModels) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelCandidate,
+            contents,
+            config: {
+              systemInstruction: systemPrompt,
+              temperature: 0.7,
+            },
+          });
 
-    for (const modelCandidate of candidateModels) {
-      try {
-        const response = await ai.models.generateContent({
-          model: modelCandidate,
-          contents,
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: 0.7,
-          },
-        });
-
-        if (response.text) {
-          reply = response.text;
-          break;
+          if (response.text) {
+            return res.json({ reply: response.text });
+          }
+        } catch (candidateErr: any) {
+          console.log(`[Gemini Chat ${modelCandidate}]: Demand spike or unavailable, trying next candidate...`);
         }
-      } catch (candidateErr: any) {
-        // Log friendly switch message without alarming error monitors
-        console.log(`[Gemini Chat ${modelCandidate}]: Transient demand spike or unavailable, trying next candidate...`);
       }
     }
 
-    if (reply) {
-      return res.json({ reply });
-    }
-
-    // If all remote models are temporarily unavailable, provide domain-specific agricultural advisory
-    console.log("[Gemini Chat]: Using regional agro-intelligence advisory.");
+    // Dynamic, question-specific agricultural advisor when API key is missing or model unavailable
     const isBn = language === "bn";
     const lower = String(message || "").toLowerCase();
 
     let smartReply = "";
-    if (lower.includes("blast") || lower.includes("ব্লাস্ট") || lower.includes("রোগ")) {
+    if (lower.includes("সার") || lower.includes("fertilizer") || lower.includes("urea") || lower.includes("মাত্রা") || lower.includes("টিএসপি") || lower.includes("পটাশ") || lower.includes("ড্যাপ")) {
       smartReply = isBn
-        ? "ধানের ব্লাস্ট রোগ নিরাময়ের পরামর্শ:\n• অনুমোদিত ছত্রাকনাশক: ট্রাইসাইক্লাজোল ৭৫% ডব্লিউপি (যেমন ট্রুপার / বিম) প্রতি লিটার পানিতে ০.৭৫ গ্রাম বা নেটিভো ৭৫ ডব্লিউজি প্রতি লিটার পানিতে ০.৬ গ্রাম মিশিয়ে বিকেলের দিকে স্প্রে করুন।\n• জমিতে অতিরিক্ত ইউরিয়া সার দেওয়া বন্ধ রাখুন এবং পটাশ সার কিস্তিতে দিন।\n• জৈব সমাধান: নিম পাতার নির্যাস ৫% স্প্রে করুন এবং জমির পানি ২ দিন শুকিয়ে নিন।"
-        : "Rice Blast Management:\n• Recommended Fungicide: Spray Tricyclazole 75% WP @ 0.75g/L water or Nativo 75 WG @ 0.6g/L in the late afternoon.\n• Halt excessive Urea top-dressing and apply recommended Potash (MoP) split dose.\n• Organic option: Spray 5% Neem Seed Kernel Extract and aerate soil roots.";
-    } else if (lower.includes("সার") || lower.includes("fertilizer") || lower.includes("urea")) {
+        ? `🌾 **ধান ও ফসলের জন্য বৈজ্ঞানিক অনুমোদিত সারের সঠিক মাত্রা (বিঘা প্রতি - ৩৩ শতক):**\n\n• **ইউরিয়া:** ২৮-৩২ কেজি (৩ কিস্তিতে: চারা রোপণের ১৫-২০ দিন, ৩০-৩৫ দিন ও কাইচথোড় আসার ৫-৭ দিন আগে প্রয়োগ করুন)।\n• **টিএসপি / ডিএপি:** ১৩-১৫ কেজি (জমি তৈরির শেষ চাষে সম্পূর্ণ প্রয়োগ করুন)।\n• **এমওপি (পটাশ):** ১২-১৪ কেজি (৫০% শেষ চাষে এবং ৫০% কাইচথোড়ের সময়)।\n• **জিপসাম:** ৮-১০ কেজি ও **দস্তা (জিংক সালফেট):** ১.৫ কেজি শেষ চাষে দিন।\n\n💡 *টিপস: ইউরিয়া সার ছিটানোর সময় জমিতে পরিমিত আর্দ্রতা রাখুন। জলাবদ্ধ জমিতে সার ছিটাবেন না।*`
+        : `🌾 **Standard Fertilizer Schedule for Rice & Crops (per Bigha):**\n\n• **Urea:** 28-32 kg (Split doses: 15-20 days, 30-35 days, and panicle initiation).\n• **TSP / DAP:** 13-15 kg (at final land preparation).\n• **MoP (Potash):** 12-14 kg (50% basal, 50% panicle initiation).\n• **Gypsum:** 8-10 kg & **Zinc Sulphate:** 1.5 kg at final plowing.`;
+    } else if (lower.includes("পোকা") || lower.includes("pest") || lower.includes("মাজরা") || lower.includes("কীটপতঙ্গ") || lower.includes("দমন") || lower.includes("কারেন্ট")) {
       smartReply = isBn
-        ? "ধানের জন্য আদর্শ সারের মাত্রা (বিঘা প্রতি):\n• ইউরিয়া: ২৮-৩০ কেজি (চারা রোপণের ১৫-২০ দিন, ৩০-৩৫ দিন ও কাইচথোড় আসার আগে ৩ কিস্তিতে দিন)\n• টিএসপি: ১৩-১৫ কেজি (জমি তৈরির শেষ চাষে)\n• এমওপি / পটাশ: ১২-১৪ কেজি (২ কিস্তিতে)\n• জিপসাম: ৮-১০ কেজি ও দস্তা: ১.৫ কেজি।"
-        : "Standard Fertilizer Schedule for Rice (per Bigha):\n• Urea: 28-30 Kg (Split into 3 doses at tillering, maximum tillering, and panicle initiation)\n• TSP: 13-15 Kg (At final land preparation)\n• MoP: 12-14 Kg (In two splits)\n• Gypsum: 8-10 Kg & Zinc Sulphate: 1.5 Kg.";
-    } else if (lower.includes("পোকা") || lower.includes("pest") || lower.includes("মাজরা")) {
+        ? `🐛 **কীটপতঙ্গ ও মাজরা পোকা সমন্বিত দমন ব্যবস্থাপনা:**\n\n১. **জৈব ও প্রাকৃতিক দমন:**\n   • জমিতে ডালপালা বা কঞ্চি পুঁতে পার্চিং করুন (পাখি বসে পোকা খাবে)।\n   • ডিমের গাদা হাত দিয়ে সংগ্রহ করে ধ্বংস করুন এবং আলোক ফাঁদ ব্যবহার করুন।\n   • নিম পাতার নির্যাস (৫%) স্প্রে করুন।\n\n২. **অনুমোদিত রাসায়নিক বালাইনাশক:**\n   • মাজরা পোকার আক্রমণে: কার্বোফিউরান ৫জি (ফুরাডান বিঘায় ১.৫ কেজি) অথবা ভিরতাকো অনুমোদিত মাত্রায় দিন।\n   • স্প্রে করার জন্য: কার্বোসালফান (মার্শাল ২০ ইসি ২ মিলি/লিটার) বা কারটাপ (সানটাপ ১.২ গ্রাম/লিটার)।\n   • বাদামি গাছফড়িং (কারেন্ট পোকা) দেখা দিলে অবিলম্বে পানি শুকিয়ে পাইমেট্রোজিন (চেস ০.৬ গ্রাম/লিটার) গোড়ায় স্প্রে করুন।`
+        : `🐛 **Pest Management Protocols:**\n\n1. **Integrated Pest Management (IPM):** Set up bamboo perches for birds; use light traps and 5% neem extract.\n2. **Chemical Control:** For stem borers, apply Carbofuran 5G @ 1.5kg/bigha or spray Carbosulfan (Marshal 20 EC @ 2ml/L). For brown planthoppers (BPH), drain water and apply Pymetrozine (Chess 50 WG @ 0.6g/L).`;
+    } else if (lower.includes("blast") || lower.includes("ব্লাস্ট") || lower.includes("রোগ") || lower.includes("ছত্রাক") || lower.includes("পচা") || lower.includes("ধসা") || lower.includes("blight")) {
       smartReply = isBn
-        ? "মাজরা ও বাদামী গাছফড়িং দমন:\n• মাজরা পোকার ডিমের গাদা হাত দিয়ে সংগ্রহ করে নষ্ট করুন এবং জমিতে ডালপালা পুঁতে পার্চিং করুন।\n• তীব্র আক্রমণে কার্বোফিউরান ৫জি (প্রতি বিঘায় ১.৫ কেজি) বা ভিরতাকো অনুমোদিত মাত্রায় প্রয়োগ করুন।"
-        : "Stem Borer & Pest Management:\n• Implement biological perching (bamboo twigs in field for birds to feed on moths).\n• If infestation exceeds economic threshold, apply Cartap Hydrochloride (Suntap) or Chlorantraniliprole according to packet label.";
+        ? `🔬 **ধানের ব্লাস্ট ও ছত্রাকজনিত রোগ নিরাময়ের পরামর্শ:**\n\n• **অনুমোদিত ছত্রাকনাশক:** ট্রাইসাইক্লাজোল ৭৫% ডব্লিউপি (যেমন ট্রুপার / বিম) প্রতি লিটার পানিতে ০.৭৫ গ্রাম বা নেটিভো ৭৫ ডব্লিউজি প্রতি লিটার পানিতে ০.৬ গ্রাম মিশিয়ে বিকেলের দিকে স্প্রে করুন। ৭-১০ দিন পর আরেকবার স্প্রে করুন।\n• **সার ব্যবস্থাপনা:** জমিতে অতিরিক্ত ইউরিয়া সার দেওয়া বন্ধ রাখুন এবং বিঘা প্রতি ৫ কেজি অতিরিক্ত পটাশ সার কিস্তিতে দিন।\n• **জৈব সমাধান ও নিষ্কাশন:** নিম পাতার নির্যাস ৫% স্প্রে করুন এবং জমির পানি ২-৩ দিন শুকিয়ে নিন।`
+        : `🔬 **Rice Blast & Fungal Blight Management:**\n\n• Recommended Fungicide: Spray Tricyclazole 75% WP @ 0.75g/L water or Nativo 75 WG @ 0.6g/L in late afternoon.\n• Halt excessive Urea top-dressing and apply supplemental Potash (MoP).\n• Drain standing field water for 2-3 days to aerate root beds.`;
+    } else if (lower.includes("সেচ") || lower.includes("পানি") || lower.includes("water") || lower.includes("irrigation") || lower.includes("খরা") || lower.includes("বন্যা")) {
+      smartReply = isBn
+        ? `💧 **সেচ ও পানি ব্যবস্থাপনা (AWD পদ্ধতি):**\n\n• জমিতে সার্বক্ষণিক পানি আটকে না রেখে এডাব্লিউডি (পর্যায়ক্রমে শুকানো ও ভিজানো) পদ্ধতি মেনে চলুন। মাটির নিচে পানির স্তর ৭-১০ সেমি নামলে তবেই সেচ দিন। এতে ৩০% সেচের পানি সাশ্রয় হয়।\n• কুঁড়ি অবস্থা ও কাইচথোড়ের সময় জমিতে অবশ্যই পরিমিত পানি নিশ্চিত করুন। অতিরিক্ত বৃষ্টির পর পানি নিষ্কাশন নালা সচল রাখুন।`
+        : `💧 **Irrigation & Water Guidance:**\n\n• Adopt Alternate Wetting and Drying (AWD) to save up to 30% water and fuel costs.\n• Maintain standing water during critical panicle initiation stage. Keep drainage furrows unblocked after heavy rains.`;
     } else {
       smartReply = isBn
-        ? `স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ পরামর্শ: আপনার প্রশ্ন "${message}" সংক্রান্ত তথ্যের জন্য স্থানীয় উপসহকারী কৃষি কর্মকর্তার পরামর্শ গ্রহণ করুন। জমিতে পানি নিকাশ ও সুষম সার (ইউরিয়া, টিএসপি, পটাশ) প্রয়োগ নিশ্চিত করুন।`
-        : `Smart Aero Field Agronomist recommendation: For "${message}", ensure adequate field irrigation, balanced fertilizer dosage, and regular pest scouting.`;
+        ? `🌾 **স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ পরামর্শ:**\n\nআপনার প্রশ্ন "${message}" সংক্রান্ত তথ্যের জন্য:\n১. মাটিতে সুষম সার (ইউরিয়া, টিএসপি, পটাশ, জিপসাম ও জিংক) সঠিক কিস্তিতে ব্যবহার করুন।\n২. পোকা বা রোগের প্রাথমিক লক্ষণ দেখামাত্র অনুমোদিত বালাইনাশক সঠিক মাত্রায় প্রয়োগ করুন।\n৩. আবহাওয়ার পূর্বাভাস অনুযায়ী সেচ ও নিষ্কাশন ব্যবস্থা বজায় রাখুন।\n\n💡 *টিপস: লাইভ জেমিনি এআই মডেল ব্যবহারের জন্য Vercel Environment Variables-এ \`GEMINI_API_KEY\` যুক্ত করুন।*`
+        : `🌾 **Smart Aero Field Agronomist Advisory:**\n\nFor "${message}": Ensure balanced fertilization, periodic pest monitoring, and proper water management.\n\n💡 *Tip: To enable live Gemini AI queries on Vercel, ensure \`GEMINI_API_KEY\` is added to your Vercel Project Environment Variables.*`;
     }
 
     return res.json({ reply: smartReply });
   } catch (error: any) {
-    console.log("[Gemini Chat Handler]: Serving agro guidance fallback.");
-    const { message, language = "bn" } = req.body;
+    console.log("[Gemini Chat Handler]: Error handling query, serving smart fallback.");
+    const { message = "", language = "bn" } = req.body || {};
     const isBn = language === "bn";
     const smartReply = isBn
-      ? `স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ পরামর্শ: ফসলের সঠিক বৃদ্ধি ও রোগবালাই দমনে অনুমোদিত বালাইনাশক পরিমিত মাত্রায় ব্যবহার করুন এবং জমির নিষ্কাশন ব্যবস্থা নিশ্চিত করুন।`
+      ? `স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ পরামর্শ: ফসলের সঠিক বৃদ্ধি ও রোগবালাই দমনে সুষম সার পরিমিত মাত্রায় ব্যবহার করুন এবং জমির নিষ্কাশন ব্যবস্থা নিশ্চিত করুন।`
       : `Smart Aero Field Agronomist recommendation: Ensure adequate drainage, balanced fertilization, and monitor crops regularly for pest control.`;
     return res.json({ reply: smartReply });
   }

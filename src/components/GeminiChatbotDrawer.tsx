@@ -31,13 +31,14 @@ import {
   getActiveFarmerId,
   normalizePhone
 } from '../lib/firestoreService';
+import { generateSmartAgronomicReply } from '../utils/smartAgroAdvisor';
 
 interface GeminiChatbotDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   language: Language;
   initialPrompt?: string | null;
-  currentUser?: { name: string; phone: string; district: string; landSize: string } | null;
+  currentUser?: { name: string; phone: string; district: string; landSize: string; primaryCrop?: string; primaryCrops?: string[] } | null;
 }
 
 export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
@@ -84,7 +85,7 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
     id: 'init-greeting',
     sender: 'bot',
     text: lang === 'bn'
-      ? `নমস্কার / আসসালামু আলাইকুম${currentUser?.name ? ` ${currentUser.name} ভাই` : ''}! আমি আপনার স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ। ফসলের রোগবালাই, সার-কীটনাশকের সঠিক মাত্রা বা আবহাওয়া সংক্রান্ত যেকোনো প্রশ্ন করতে পারেন। পূর্ববর্তী চ্যাট দেখতে উপরের "হিস্টোরি" বাটনে ক্লিক করুন।`
+      ? `হ্যালো${currentUser?.name ? ` ${currentUser.name} ভাই` : ''}! আমি আপনার স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ। ফসলের রোগবালাই, সার-কীটনাশকের সঠিক মাত্রা বা আবহাওয়া সংক্রান্ত যেকোনো প্রশ্ন করতে পারেন। পূর্ববর্তী চ্যাট দেখতে উপরের "হিস্টোরি" বাটনে ক্লিক করুন।`
       : `Hello${currentUser?.name ? ` ${currentUser.name}` : ''}! I am your Smart Aero Field AI Agronomist. Ask me anything about crop health, fertilizer doses, or weather. Click "History" above to view past conversations.`,
     timestamp: 'Just now',
     createdAt: new Date().toISOString(),
@@ -359,6 +360,8 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
       console.warn('Firebase chat message save error:', err)
     );
 
+    let botReply = '';
+
     try {
       // Build conversational history for context
       const historyPayload = messages
@@ -369,22 +372,82 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
           text: m.text,
         }));
 
-      const response = await fetch('/api/gemini/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: query,
-          language: chatLanguage,
-          history: historyPayload,
-        }),
-      });
+      // 1. First attempt: Standard server / Vercel Serverless Function endpoint
+      try {
+        const response = await fetch('/api/gemini/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: query,
+            language: chatLanguage,
+            history: historyPayload,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data && typeof data.reply === 'string' && data.reply.trim().length > 0) {
+            botReply = data.reply;
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('Backend /api/gemini/chat endpoint unreachable, trying client fallback...', fetchErr);
       }
 
-      const data = await response.json();
-      const botReply = data.reply || (chatLanguage === 'bn' ? 'দুঃখিত, কোনো উত্তর পাওয়া যায়নি।' : 'No answer available.');
+      // 2. Second attempt: Client-side Gemini if VITE_GEMINI_API_KEY or localStorage key exists
+      if (!botReply) {
+        const clientApiKey =
+          (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+          (typeof window !== 'undefined' ? localStorage.getItem('krishi_custom_gemini_key') : null);
+
+        if (clientApiKey) {
+          try {
+            const { GoogleGenAI } = await import('@google/genai');
+            const ai = new GoogleGenAI({ apiKey: clientApiKey });
+            const candidateModels = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+            for (const modelCandidate of candidateModels) {
+              try {
+                const resp = await ai.models.generateContent({
+                  model: modelCandidate,
+                  contents: [
+                    ...historyPayload.map((h) => ({
+                      role: h.role === 'user' ? 'user' : 'model',
+                      parts: [{ text: h.text }],
+                    })),
+                    { role: 'user', parts: [{ text: query }] },
+                  ],
+                  config: {
+                    systemInstruction: `You are "Smart Aero Field AI Agronomist" (স্মার্ট অ্যারো ফিল্ড এআই কৃষিবিদ), an expert agricultural consultant for smallholder farmers in Bangladesh. Language: ${chatLanguage === 'bn' ? 'Bengali (বাংলা)' : 'English'}. When greeting in Bengali, use "হ্যালো", never "নমস্কার". Provide concrete fertilizer doses, pest management, and practical farming advice concisely.`,
+                    temperature: 0.7,
+                  },
+                });
+                if (resp && resp.text) {
+                  botReply = resp.text;
+                  break;
+                }
+              } catch {
+                // Try next candidate
+              }
+            }
+          } catch (clientGeminiErr) {
+            console.warn('Client-side Gemini failed:', clientGeminiErr);
+          }
+        }
+      }
+
+      // 3. Third attempt: Domain-specific Bangladeshi agronomy knowledge engine
+      // Answers exact fertilizer doses, pest controls, diseases, seeds, AWD water schedules
+      if (!botReply) {
+        const farmerCrop =
+          currentUser?.primaryCrop ||
+          (currentUser?.primaryCrops && currentUser.primaryCrops[0]);
+        botReply = generateSmartAgronomicReply(
+          query,
+          chatLanguage,
+          farmerCrop,
+          currentUser?.district
+        );
+      }
 
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
@@ -403,10 +466,16 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
         console.warn('Firebase chat bot reply save error:', err)
       );
     } catch (err: any) {
-      console.warn('Chat request failed, using intelligent agronomy fallback:', err);
-      const fallbackText = chatLanguage === 'bn'
-        ? 'কৃষি বিশেষজ্ঞ পরামর্শ: জমিতে রোগ বা পোকামাকড় আক্রমণ প্রতিরোধে নিয়মিত জমির পানি নিষ্কাশন ও অনুমোদিত মাত্রায় ছত্রাকনাশক (যেমন ট্রাইসাইক্লাজোল ৭৫ ডব্লিউপি ০.৭৫ গ্রাম/লিটার) স্প্রে করুন। অতিরিক্ত ইউরিয়া সার ব্যবহার করবেন না।'
-        : 'Agronomist Advisory: Ensure proper field drainage to halt fungal spore germination. For rice blast or leaf blight, apply recommended systemic fungicide (Tricyclazole 75% WP @ 0.75g/L). Maintain balanced potash application.';
+      console.warn('Chat request caught error, serving smart agronomy advisor:', err);
+      const farmerCrop =
+        currentUser?.primaryCrop ||
+        (currentUser?.primaryCrops && currentUser.primaryCrops[0]);
+      const fallbackText = generateSmartAgronomicReply(
+        query,
+        chatLanguage,
+        farmerCrop,
+        currentUser?.district
+      );
 
       const fallbackMsg: ChatMessage = {
         id: `bot-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
