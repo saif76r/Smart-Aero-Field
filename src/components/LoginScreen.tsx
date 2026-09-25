@@ -548,7 +548,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           {/* Footer Security Badge */}
           <div className="mt-5 pt-3 border-t border-gray-100 flex items-center justify-center space-x-1.5 text-xs text-gray-500 font-medium">
             <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-            <span className="text-center">{isBn ? 'ডিএই ও নাসা স্যাটেলাইট সংহত • ফায়ারবেস ক্লাউড সংরক্ষিত' : 'DAE & NASA Satellite Feeds • Firebase Cloud Secured'}</span>
+            <span className="text-center">{isBn ? 'ডিএই ও নাসা স্যাটেলাইট সংহত' : 'DAE & NASA Satellite Feeds'}</span>
           </div>
         </div>
       </div>
