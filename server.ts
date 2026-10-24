@@ -1184,8 +1184,8 @@ Return only valid JSON.`;
     let enrichedData: any = null;
     let modelSuccess = false;
 
-    // Failover sequence: gemini-2.5-flash -> gemini-3.1-flash-lite -> gemini-3.8-flash
-    const candidateModels = ["gemini-2.5-flash", "gemini-3.1-flash-lite", "gemini-3.8-flash"];
+    // Failover sequence: gemini-2.5-flash -> gemini-2.0-flash -> gemini-1.5-flash
+    const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
 
     for (const modelCandidate of candidateModels) {
       try {

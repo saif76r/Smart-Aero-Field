@@ -1,3 +1,5 @@
+export const maxDuration = 30;
+
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -8,9 +10,18 @@ export default async function handler(req: any, res: any) {
     return;
   }
 
+  let body = req.body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      body = {};
+    }
+  }
+
   const now = new Date();
   const defaultDate = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-  const rawDistrict = req.body?.district || 'Dhaka';
+  const rawDistrict = body?.district || 'Dhaka';
 
   const districtMap: Record<string, string> = {
     jessore: 'Jashore',
@@ -24,7 +35,7 @@ export default async function handler(req: any, res: any) {
   };
   const district = districtMap[rawDistrict.toLowerCase().trim()] || rawDistrict;
 
-  const cleanDate = req.body?.date ? String(req.body.date).replace(/-/g, '').trim() : defaultDate;
+  const cleanDate = body?.date ? String(body.date).replace(/-/g, '').trim() : defaultDate;
   const reqYear = parseInt(cleanDate.substring(0, 4), 10) || now.getFullYear();
   const monthDay = cleanDate.length >= 8 ? cleanDate.substring(4, 8) : '0918';
   const nasaBaselineDate = `2023${monthDay}`;
