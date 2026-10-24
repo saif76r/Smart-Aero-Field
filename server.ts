@@ -205,8 +205,8 @@ Keep paragraphs concise and bulleted for easy reading on mobile screens by farme
         },
       ];
 
-      // Multi-model failover sequence: gemini-2.5-flash -> gemini-3.8-flash -> gemini-3.1-flash-lite
-      const candidateModels = ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-3.1-flash-lite"];
+      // Multi-model failover sequence: gemini-2.5-flash -> gemini-2.0-flash -> gemini-1.5-flash
+      const candidateModels = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
       for (const modelCandidate of candidateModels) {
         try {
           const response = await ai.models.generateContent({

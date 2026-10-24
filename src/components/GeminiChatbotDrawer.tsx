@@ -372,7 +372,10 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
           text: m.text,
         }));
 
-      // 1. First attempt: Standard server / Vercel Serverless Function endpoint
+      // 1. First attempt: Standard server / Vercel Serverless Function endpoint with 6s timeout
+      const controller = new AbortController();
+      const abortTimer = setTimeout(() => controller.abort(), 6000);
+
       try {
         const response = await fetch('/api/gemini/chat', {
           method: 'POST',
@@ -382,7 +385,10 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
             language: chatLanguage,
             history: historyPayload,
           }),
+          signal: controller.signal,
         });
+
+        clearTimeout(abortTimer);
 
         if (response.ok) {
           const data = await response.json();
@@ -391,10 +397,11 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
           }
         }
       } catch (fetchErr) {
-        console.warn('Backend /api/gemini/chat endpoint unreachable, trying client fallback...', fetchErr);
+        clearTimeout(abortTimer);
+        console.warn('Backend /api/gemini/chat endpoint slow or unreachable, trying client fallback...', fetchErr);
       }
 
-      // 2. Second attempt: Client-side Gemini if VITE_GEMINI_API_KEY or localStorage key exists
+      // 2. Second attempt: Client-side Gemini if VITE_GEMINI_API_KEY exists
       if (!botReply) {
         const clientApiKey =
           (import.meta as any).env?.VITE_GEMINI_API_KEY ||
@@ -404,7 +411,7 @@ export const GeminiChatbotDrawer: React.FC<GeminiChatbotDrawerProps> = ({
           try {
             const { GoogleGenAI } = await import('@google/genai');
             const ai = new GoogleGenAI({ apiKey: clientApiKey });
-            const candidateModels = ['gemini-2.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+            const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
             for (const modelCandidate of candidateModels) {
               try {
                 const resp = await ai.models.generateContent({
